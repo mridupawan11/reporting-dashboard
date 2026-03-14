@@ -2672,7 +2672,9 @@ async function fetchAndPopulate(startDate, endDate) {
         const position = r.position || 0;
 
         document.getElementById('kpi-clicks').textContent = fmtNum(clicks);
+        document.getElementById('kpi-clicks').dataset.raw = clicks;
         document.getElementById('kpi-impressions').textContent = fmtBig(impressions);
+        document.getElementById('kpi-impressions').dataset.raw = impressions;
         document.getElementById('kpi-ctr').textContent = ctr.toFixed(2) + '%';
         document.getElementById('kpi-position').textContent = position.toFixed(1);
 
@@ -2926,18 +2928,45 @@ async function fetchAndPopulate(startDate, endDate) {
           totalAllSessions += sessions;
         });
 
-        // Traffic Sources section
+        // Traffic Sources section — real SVG donut ring
         const tsEl = document.getElementById('section-traffic-sources');
         if (tsEl && totalAllSessions > 0) {
           const sorted = Object.entries(channelData).sort((a,b) => b[1] - a[1]).slice(0, 5);
           const colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#64748b'];
           const header = tsEl.querySelector('.chart-header').outerHTML;
-          const topPct = totalAllSessions ? ((sorted[0][1]/totalAllSessions)*100).toFixed(0) : '0';
-          let legendHtml = sorted.map((ch, i) => {
+          const topPct = ((sorted[0][1] / totalAllSessions) * 100).toFixed(0);
+          const circumference = 2 * Math.PI * 60; // r=60
+
+          // Build SVG donut segments
+          let offset = 0;
+          let circles = '';
+          sorted.forEach((ch, i) => {
+            const pct = ch[1] / totalAllSessions;
+            const dash = pct * circumference;
+            const gap = circumference - dash;
+            circles += `<circle cx="80" cy="80" r="60" fill="none" stroke="${colors[i]}" stroke-width="24"
+              stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
+              stroke-dashoffset="${(-offset).toFixed(2)}"
+              transform="rotate(-90 80 80)"/>`;
+            offset += dash;
+          });
+
+          const shortName = sorted[0][0].replace(' Search','').replace('Organic','Organic');
+          const legendHtml = sorted.map((ch, i) => {
             const pct = ((ch[1]/totalAllSessions)*100).toFixed(0);
             return `<div class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span> ${escHtml(ch[0])} <span class="legend-value">${pct}%</span></div>`;
           }).join('');
-          tsEl.innerHTML = header + `<div class="donut-container"><div style="text-align:center;"><div style="font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;color:var(--accent-blue);">${topPct}%</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${escHtml(sorted[0][0])}</div></div><div class="donut-legend">${legendHtml}</div></div>`;
+
+          tsEl.innerHTML = header + `
+            <div class="donut-container">
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                <circle cx="80" cy="80" r="60" fill="none" stroke="var(--bg-primary)" stroke-width="24"/>
+                ${circles}
+                <text x="80" y="76" text-anchor="middle" fill="var(--text-primary)" font-family="JetBrains Mono" font-size="20" font-weight="700">${topPct}%</text>
+                <text x="80" y="94" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-family="DM Sans">${escHtml(shortName)}</text>
+              </svg>
+              <div class="donut-legend">${legendHtml}</div>
+            </div>`;
         }
 
         // Organic metrics for KPIs
@@ -2966,18 +2995,49 @@ async function fetchAndPopulate(startDate, endDate) {
             setChange('kpi-conversions-chg', curOrg.conv, prevOrg.conv, '%');
           }
 
-          // Update conversion funnel with real data
+          // Update conversion funnel with real data — full 5-step funnel
           const funnelEl = document.getElementById('section-funnel');
           if (funnelEl) {
-            const impVal = document.getElementById('kpi-impressions') ? document.getElementById('kpi-impressions').textContent : '0';
-            const clickVal = document.getElementById('kpi-clicks') ? document.getElementById('kpi-clicks').textContent : '0';
             const header = funnelEl.querySelector('.chart-header').outerHTML;
-            const ctrPct = curOrg.sessions > 0 ? ((curOrg.conv / curOrg.sessions) * 100).toFixed(2) : '0';
-            funnelEl.innerHTML = header + `<div style="padding:16px 0;">
-              <div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Organic Sessions</span><span class="mono" style="font-size:13px;">${fmtNum(Math.round(curOrg.sessions))}</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--gradient-primary);"></div></div></div>
-              <div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Engaged Sessions</span><span class="mono" style="font-size:13px;">${fmtNum(Math.round(curOrg.sessions * (1-curOrg.bounce)))}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${((1-curOrg.bounce)*100).toFixed(0)}%;background:linear-gradient(135deg,#8b5cf6,#06b6d4);"></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${((1-curOrg.bounce)*100).toFixed(1)}% engagement rate</div></div>
-              <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Conversions</span><span class="mono" style="font-size:13px;color:var(--accent-emerald);">${fmtNum(Math.round(curOrg.conv))}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(parseFloat(ctrPct)*5, 100)}%;background:var(--accent-emerald);"></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${ctrPct}% conversion rate</div></div>
-            </div>`;
+
+            // Pull real impressions & clicks from GSC KPI elements (already fetched above)
+            const rawImpressions = parseFloat((document.getElementById('kpi-impressions')?.dataset?.raw) || 0);
+            const rawClicks = parseFloat((document.getElementById('kpi-clicks')?.dataset?.raw) || 0);
+
+            const orgSessionsVal = Math.round(curOrg.sessions);
+            const engagedSessions = Math.round(curOrg.sessions * (1 - curOrg.bounce));
+            const convVal = Math.round(curOrg.conv);
+            const engRate = ((1 - curOrg.bounce) * 100).toFixed(1);
+            const convRate = orgSessionsVal > 0 ? ((convVal / orgSessionsVal) * 100).toFixed(2) : '0';
+
+            // Build funnel steps — use GSC data where available, GA4 for rest
+            const steps = [];
+            if (rawImpressions > 0) {
+              steps.push({ label: 'Impressions', val: rawImpressions, color: 'var(--gradient-primary)', note: '' });
+            }
+            if (rawClicks > 0) {
+              const ctr = rawImpressions > 0 ? ((rawClicks/rawImpressions)*100).toFixed(2) : null;
+              steps.push({ label: 'Clicks', val: rawClicks, color: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', note: ctr ? `${ctr}% click-through rate` : '' });
+            }
+            steps.push({ label: 'Organic Sessions', val: orgSessionsVal, color: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', note: '' });
+            steps.push({ label: 'Engaged Sessions', val: engagedSessions, color: 'linear-gradient(135deg,#06b6d4,#10b981)', note: `${engRate}% engagement rate` });
+            steps.push({ label: 'Conversions', val: convVal, color: 'var(--accent-emerald)', note: `${convRate}% conversion rate`, highlight: true });
+
+            const maxVal = steps[0]?.val || 1;
+            const stepsHtml = steps.map(step => {
+              const barPct = Math.max(2, (step.val / maxVal) * 100).toFixed(1);
+              const valFmt = step.val >= 1000000 ? (step.val/1000000).toFixed(2)+'M' : step.val >= 1000 ? (step.val/1000).toFixed(1)+'K' : fmtNum(step.val);
+              return `<div style="margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                  <span style="font-size:13px;">${step.label}</span>
+                  <span class="mono" style="font-size:13px;${step.highlight?'color:var(--accent-emerald);':''}">${valFmt}</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${barPct}%;background:${step.color};"></div></div>
+                ${step.note ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${step.note}</div>` : ''}
+              </div>`;
+            }).join('');
+
+            funnelEl.innerHTML = header + `<div style="padding:16px 0;">${stepsHtml}</div>`;
           }
         } else {
           // No organic data found
@@ -2991,34 +3051,82 @@ async function fetchAndPopulate(startDate, endDate) {
 
       // ---- NEW vs RETURNING USERS (GA4) ----
       try {
-        const userRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${liveState.ga4Token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dateRanges: [{ startDate, endDate }],
-            dimensions: [{ name: 'newVsReturning' }],
-            metrics: [{ name: 'sessions' }, { name: 'bounceRate' }, { name: 'averageSessionDuration' }],
-            dimensionFilter: { filter: { fieldName: 'sessionDefaultChannelGroup', stringFilter: { matchType: 'CONTAINS', value: 'Organic', caseSensitive: false } } }
+        // Fetch new vs returning WITHOUT a channel filter first (more reliable),
+        // then also fetch organic-only sessions to weight the numbers correctly.
+        const [userRes, orgUserRes] = await Promise.all([
+          fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${liveState.ga4Token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              dateRanges: [{ startDate, endDate }],
+              dimensions: [{ name: 'newVsReturning' }],
+              metrics: [{ name: 'sessions' }, { name: 'bounceRate' }, { name: 'averageSessionDuration' }]
+            })
+          }),
+          fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${liveState.ga4Token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              dateRanges: [{ startDate, endDate }],
+              dimensions: [{ name: 'newVsReturning' }, { name: 'sessionDefaultChannelGroup' }],
+              metrics: [{ name: 'sessions' }, { name: 'bounceRate' }, { name: 'averageSessionDuration' }]
+            })
           })
-        });
-        const userData = await userRes.json();
+        ]);
+        const [userData, orgUserData] = await Promise.all([userRes.json(), orgUserRes.json()]);
+
         const usEl = document.getElementById('section-user-segments');
-        if (userData.rows && usEl) {
+        if (usEl) {
           let newU = { sessions:0, bounce:0, dur:0 }, retU = { sessions:0, bounce:0, dur:0 };
-          userData.rows.forEach(r => {
-            const type = r.dimensionValues[0].value.toLowerCase();
-            const m = r.metricValues;
-            if (type === 'new') { newU = { sessions:parseFloat(m[0].value)||0, bounce:parseFloat(m[1].value)||0, dur:parseFloat(m[2].value)||0 }; }
-            else { retU = { sessions:parseFloat(m[0].value)||0, bounce:parseFloat(m[1].value)||0, dur:parseFloat(m[2].value)||0 }; }
-          });
+
+          // Try organic-specific rows first
+          if (orgUserData.rows && orgUserData.rows.length > 0) {
+            let newOrgSessions = 0, retOrgSessions = 0;
+            let newBounce = 0, retBounce = 0, newDur = 0, retDur = 0;
+            let newCount = 0, retCount = 0;
+            orgUserData.rows.forEach(r => {
+              const type = (r.dimensionValues[0].value || '').toLowerCase();
+              const channel = (r.dimensionValues[1].value || '').toLowerCase();
+              if (!channel.includes('organic')) return;
+              const s = parseFloat(r.metricValues[0].value) || 0;
+              const b = parseFloat(r.metricValues[1].value) || 0;
+              const d = parseFloat(r.metricValues[2].value) || 0;
+              if (type === 'new') { newOrgSessions += s; newBounce += b * s; newDur += d * s; newCount += s; }
+              else { retOrgSessions += s; retBounce += b * s; retDur += d * s; retCount += s; }
+            });
+            if (newCount > 0) newU = { sessions: newOrgSessions, bounce: newBounce/newCount, dur: newDur/newCount };
+            if (retCount > 0) retU = { sessions: retOrgSessions, bounce: retBounce/retCount, dur: retDur/retCount };
+          }
+
+          // Fallback to all-traffic new vs returning if organic had no data
+          if (newU.sessions === 0 && userData.rows && userData.rows.length > 0) {
+            userData.rows.forEach(r => {
+              const type = (r.dimensionValues[0].value || '').toLowerCase();
+              const s = parseFloat(r.metricValues[0].value) || 0;
+              const b = parseFloat(r.metricValues[1].value) || 0;
+              const d = parseFloat(r.metricValues[2].value) || 0;
+              if (type === 'new') newU = { sessions: s, bounce: b, dur: d };
+              else retU = { sessions: s, bounce: b, dur: d };
+            });
+          }
+
           const header = usEl.querySelector('.chart-header').outerHTML;
           const fmtDur = (s) => { const m=Math.floor(s/60), sec=Math.round(s%60); return m+'m '+sec+'s'; };
+          const dataNote = newU.sessions > 0 ? '' : '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Showing all-traffic data (no organic segment found)</div>';
           usEl.innerHTML = header + `
             <div style="display:flex;gap:24px;padding:16px 0;">
-              <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">New Users</div><div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-blue);margin:8px 0;">${fmtNum(Math.round(newU.sessions))}</div></div>
-              <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.12);"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">Returning</div><div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-violet);margin:8px 0;">${fmtNum(Math.round(retU.sessions))}</div></div>
+              <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);">
+                <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">New Users</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-blue);margin:8px 0;">${fmtNum(Math.round(newU.sessions))}</div>
+              </div>
+              <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.12);">
+                <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">Returning</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-violet);margin:8px 0;">${fmtNum(Math.round(retU.sessions))}</div>
+              </div>
             </div>
-            <div style="padding-top:16px;border-top:1px solid var(--border);"><div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Engagement by User Type</div>
+            ${dataNote}
+            <div style="padding-top:16px;border-top:1px solid var(--border);">
+              <div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Engagement by User Type</div>
               <div class="metric-row"><span class="metric-row-label">New User Bounce Rate</span><span class="metric-row-value">${(newU.bounce*100).toFixed(1)}%</span></div>
               <div class="metric-row"><span class="metric-row-label">Returning Bounce Rate</span><span class="metric-row-value" style="color:var(--accent-emerald);">${(retU.bounce*100).toFixed(1)}%</span></div>
               <div class="metric-row"><span class="metric-row-label">New User Avg Duration</span><span class="metric-row-value">${fmtDur(newU.dur)}</span></div>
@@ -3111,7 +3219,13 @@ async function fetchAndPopulate(startDate, endDate) {
 
   // Restore opacity
   document.querySelectorAll('.kpi-value').forEach(el => { el.style.opacity = '1'; });
-  generateHeatmap();
+
+  // Live clicks breakdown (replaces random heatmap)
+  if (liveState.gscToken && liveState.gscProperty) {
+    generateLiveClicksBreakdown(liveState.gscToken, liveState.gscProperty, startDate, endDate);
+  } else {
+    generateHeatmap();
+  }
 }
 
 // ============ HELPER FUNCTIONS ============
@@ -3354,29 +3468,110 @@ function toggleMetric(item) {
   toggle.classList.toggle('on');
 }
 
-// ============ HEATMAP GENERATION (unchanged) ============
+// ============ HEATMAP — replaced with Top Queries & Pages by Clicks from GSC ============
 function generateHeatmap() {
+  // Called in demo mode only — show placeholder message
   const grid = document.getElementById('heatmapGrid');
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const hours = ['6AM', '8AM', '10AM', '12PM', '2PM', '4PM', '6PM'];
+  if (!grid) return;
+  grid.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px;">
+    <div style="font-size:24px;margin-bottom:8px;opacity:0.4;">📊</div>
+    Connect live GSC to see real click data by query and page.
+  </div>`;
+}
 
-  grid.innerHTML = '<div></div>';
-  days.forEach(d => {
-    grid.innerHTML += `<div class="heatmap-header">${d}</div>`;
-  });
+async function generateLiveClicksBreakdown(gscToken, gscProperty, startDate, endDate) {
+  const heatEl = document.querySelector('.chart-card:has(#heatmapGrid)') || (() => {
+    // fallback: find by title
+    const cards = document.querySelectorAll('.chart-card');
+    for (const c of cards) { if (c.textContent.includes('Click Activity')) return c; }
+    return null;
+  })();
+  if (!heatEl) return;
 
-  hours.forEach(h => {
-    grid.innerHTML += `<div class="heatmap-label">${h}</div>`;
-    days.forEach(() => {
-      const val = Math.floor(Math.random() * 100);
-      let bg;
-      if (val > 75) bg = 'rgba(59,130,246,0.6)';
-      else if (val > 50) bg = 'rgba(59,130,246,0.35)';
-      else if (val > 25) bg = 'rgba(59,130,246,0.18)';
-      else bg = 'rgba(59,130,246,0.06)';
-      grid.innerHTML += `<div class="heatmap-cell" style="background:${bg}">${val > 50 ? val : ''}</div>`;
-    });
-  });
+  // Update card title
+  const titleEl = heatEl.querySelector('.chart-title');
+  const subtitleEl = heatEl.querySelector('.chart-subtitle');
+  if (titleEl) titleEl.textContent = 'Top Clicks Breakdown';
+  if (subtitleEl) subtitleEl.textContent = 'Top queries & pages by clicks · GSC';
+
+  try {
+    // Fetch top queries by clicks
+    const [qRes, pRes] = await Promise.all([
+      fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(gscProperty)}/searchAnalytics/query`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${gscToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate, endDate, dimensions: ['query'], rowLimit: 10, type: 'web' })
+      }),
+      fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(gscProperty)}/searchAnalytics/query`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${gscToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate, endDate, dimensions: ['page'], rowLimit: 10, type: 'web' })
+      })
+    ]);
+    const [qData, pData] = await Promise.all([qRes.json(), pRes.json()]);
+
+    const qRows = (qData.rows || []).sort((a,b) => b.clicks - a.clicks);
+    const pRows = (pData.rows || []).sort((a,b) => b.clicks - a.clicks);
+
+    const maxQClicks = qRows[0]?.clicks || 1;
+    const maxPClicks = pRows[0]?.clicks || 1;
+
+    const fmtPath = (url) => { try { return new URL(url).pathname; } catch(e) { return url; } };
+    const bar = (val, max, color) => {
+      const pct = Math.max(2, (val/max)*100).toFixed(0);
+      return `<div style="height:4px;border-radius:2px;background:var(--bg-elevated);margin-top:4px;"><div style="width:${pct}%;height:100%;border-radius:2px;background:${color};"></div></div>`;
+    };
+
+    const queryRows = qRows.map(r => `
+      <tr>
+        <td class="url-cell" style="max-width:200px;">${escHtml(r.keys[0])}</td>
+        <td class="mono">${fmtNum(r.clicks)}</td>
+        <td class="mono" style="color:var(--text-muted);">${fmtNum(r.impressions)}</td>
+        <td class="mono">${(r.ctr*100).toFixed(1)}%</td>
+        <td><span class="position-badge ${r.position<=3?'top3':r.position<=10?'top10':r.position<=20?'top20':'below'}">${r.position.toFixed(1)}</span></td>
+      </tr>`).join('');
+
+    const pageRows = pRows.map(r => `
+      <tr>
+        <td class="url-cell" style="max-width:220px;color:var(--accent-cyan);">${escHtml(fmtPath(r.keys[0]))}</td>
+        <td class="mono">${fmtNum(r.clicks)}</td>
+        <td class="mono" style="color:var(--text-muted);">${fmtNum(r.impressions)}</td>
+        <td class="mono">${(r.ctr*100).toFixed(1)}%</td>
+        <td><span class="position-badge ${r.position<=3?'top3':r.position<=10?'top10':r.position<=20?'top20':'below'}">${r.position.toFixed(1)}</span></td>
+      </tr>`).join('');
+
+    const grid = document.getElementById('heatmapGrid');
+    if (grid) {
+      grid.style.display = 'block';
+      grid.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+              🔍 Top Queries by Clicks
+              <span style="font-size:11px;font-weight:400;color:var(--text-muted);">· GSC</span>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Query</th><th>Clicks</th><th>Impr.</th><th>CTR</th><th>Pos</th></tr></thead>
+              <tbody>${queryRows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">No data</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+              📄 Top Pages by Clicks
+              <span style="font-size:11px;font-weight:400;color:var(--text-muted);">· GSC</span>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Page</th><th>Clicks</th><th>Impr.</th><th>CTR</th><th>Pos</th></tr></thead>
+              <tbody>${pageRows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">No data</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+  } catch(e) {
+    console.error('Clicks breakdown error:', e);
+    const grid = document.getElementById('heatmapGrid');
+    if (grid) grid.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">Could not load click data.</div>`;
+  }
 }
 
 // Chart action buttons (unchanged)
