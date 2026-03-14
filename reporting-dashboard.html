@@ -1689,22 +1689,22 @@ body::before {
           <span class="kpi-label">Organic Revenue</span>
           <span class="kpi-source ga4">GA4</span>
         </div>
-        <div class="kpi-value">$127.4K</div>
-        <span class="kpi-change up">↑ 19.3%</span>
+        <div class="kpi-value" id="kpi-rev">$127.4K</div>
+        <span class="kpi-change up" id="kpi-rev-chg">↑ 19.3%</span>
       </div>
       <div class="kpi-card cyan animate-in delay-5">
         <div class="kpi-header">
           <span class="kpi-label">Conv. Rate</span>
           <span class="kpi-source ga4">GA4</span>
         </div>
-        <div class="kpi-value">2.15%</div>
-        <span class="kpi-change up">↑ 0.14pp</span>
+        <div class="kpi-value" id="kpi-cr">2.15%</div>
+        <span class="kpi-change up" id="kpi-cr-chg">↑ 0.14pp</span>
       </div>
     </div>
 
     <!-- Main Charts Row -->
     <div class="charts-grid animate-in" style="animation-delay:0.35s;">
-      <div class="chart-card">
+      <div class="chart-card" id="section-search-trend">
         <div class="chart-header">
           <div>
             <div class="chart-title">Search Performance Trend</div>
@@ -1757,7 +1757,7 @@ body::before {
         </div>
       </div>
 
-      <div class="chart-card">
+      <div class="chart-card" id="section-traffic-sources">
         <div class="chart-header">
           <div>
             <div class="chart-title">Traffic Sources</div>
@@ -1867,7 +1867,7 @@ body::before {
 
     <!-- Organic Sessions & Engagement Trend + Device Breakdown -->
     <div class="charts-grid animate-in" style="animation-delay:0.55s;">
-      <div class="chart-card">
+      <div class="chart-card" id="section-engagement">
         <div class="chart-header">
           <div>
             <div class="chart-title">Organic Engagement Metrics</div>
@@ -1917,7 +1917,7 @@ body::before {
       </div>
 
       <!-- Device Breakdown -->
-      <div class="chart-card">
+      <div class="chart-card" id="section-device">
         <div class="chart-header">
           <div>
             <div class="chart-title">Device Breakdown</div>
@@ -1980,7 +1980,7 @@ body::before {
     <div class="three-col animate-in" style="animation-delay:0.6s;">
 
       <!-- Core Web Vitals -->
-      <div class="chart-card">
+      <div class="chart-card" id="section-cwv">
         <div class="chart-header">
           <div>
             <div class="chart-title">Core Web Vitals</div>
@@ -2029,7 +2029,7 @@ body::before {
       </div>
 
       <!-- Index Coverage -->
-      <div class="chart-card">
+      <div class="chart-card" id="section-index">
         <div class="chart-header">
           <div>
             <div class="chart-title">Index Coverage</div>
@@ -2080,7 +2080,7 @@ body::before {
       </div>
 
       <!-- AI Insights -->
-      <div class="chart-card">
+      <div class="chart-card" id="section-insights">
         <div class="chart-header">
           <div>
             <div class="chart-title">SEO Insights</div>
@@ -2112,7 +2112,7 @@ body::before {
 
     <!-- Keyword Position Distribution & New/Lost Keywords -->
     <div class="two-col animate-in" style="animation-delay:0.65s;">
-      <div class="chart-card">
+      <div class="chart-card" id="section-keyword-dist">
         <div class="chart-header">
           <div>
             <div class="chart-title">Keyword Position Distribution</div>
@@ -2159,7 +2159,7 @@ body::before {
       </div>
 
       <!-- Search Appearance -->
-      <div class="chart-card">
+      <div class="chart-card" id="section-search-appearance">
         <div class="chart-header">
           <div>
             <div class="chart-title">Search Appearance & SERP Features</div>
@@ -2207,7 +2207,7 @@ body::before {
 
     <!-- New vs Returning Users + Content Performance -->
     <div class="two-col animate-in" style="animation-delay:0.75s;">
-      <div class="chart-card">
+      <div class="chart-card" id="section-user-segments">
         <div class="chart-header">
           <div>
             <div class="chart-title">User Segments</div>
@@ -2248,7 +2248,7 @@ body::before {
       </div>
 
       <!-- Conversion Funnel -->
-      <div class="chart-card">
+      <div class="chart-card" id="section-funnel">
         <div class="chart-header">
           <div>
             <div class="chart-title">Organic Conversion Funnel</div>
@@ -2737,6 +2737,155 @@ async function fetchAndPopulate(startDate, endDate) {
         }).join('');
       }
 
+      // ---- DAILY SEARCH TREND CHART (GSC) ----
+      try {
+        const trendRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate, endDate, dimensions: ['date'], type: 'web' })
+        });
+        const trendData = await trendRes.json();
+        if (trendData.rows && trendData.rows.length > 1) {
+          const rows = trendData.rows.sort((a,b) => a.keys[0].localeCompare(b.keys[0]));
+          const maxClk = Math.max(...rows.map(r => r.clicks));
+          const maxImp = Math.max(...rows.map(r => r.impressions));
+          const w = 650, h = 200, pad = 40;
+          const stepX = (w - pad) / (rows.length - 1);
+          let clickPts = '', impPts = '', clickArea = '', impArea = '';
+          rows.forEach((r, i) => {
+            const x = pad + i * stepX;
+            const yC = h - (maxClk ? (r.clicks / maxClk) * (h - 40) : 0) - 10;
+            const yI = h - (maxImp ? (r.impressions / maxImp) * (h - 40) : 0) - 10;
+            clickPts += `${x},${yC} `;
+            impPts += `${x},${yI} `;
+          });
+          clickArea = `M${pad},${h} ` + clickPts.trim().split(' ').map((p,i) => (i===0?'L':'') + p).join(' L') + ` L${pad + (rows.length-1)*stepX},${h} Z`;
+          impArea = `M${pad},${h} ` + impPts.trim().split(' ').map((p,i) => (i===0?'L':'') + p).join(' L') + ` L${pad + (rows.length-1)*stepX},${h} Z`;
+          const labels = [rows[0].keys[0].slice(5), rows[Math.floor(rows.length/3)].keys[0].slice(5), rows[Math.floor(rows.length*2/3)].keys[0].slice(5), rows[rows.length-1].keys[0].slice(5)];
+          const labelXs = [pad, pad + Math.floor(rows.length/3)*stepX, pad + Math.floor(rows.length*2/3)*stepX, pad + (rows.length-1)*stepX];
+
+          const trendEl = document.getElementById('section-search-trend');
+          if (trendEl) {
+            const header = trendEl.querySelector('.chart-header').outerHTML;
+            trendEl.innerHTML = header + `<div class="chart-canvas"><svg width="100%" height="100%" viewBox="0 0 ${w+40} ${h+30}" preserveAspectRatio="none">
+              <line x1="${pad}" y1="${h}" x2="${w+pad-10}" y2="${h}" stroke="var(--border)" stroke-width="1"/>
+              <line x1="${pad}" y1="${h/3}" x2="${w+pad-10}" y2="${h/3}" stroke="var(--border)" stroke-width=".5" stroke-dasharray="4,4"/>
+              <line x1="${pad}" y1="${h*2/3}" x2="${w+pad-10}" y2="${h*2/3}" stroke="var(--border)" stroke-width=".5" stroke-dasharray="4,4"/>
+              <path d="${impArea}" fill="#10b981" opacity="0.1"/>
+              <path d="${clickArea}" fill="#3b82f6" opacity="0.1"/>
+              <polyline points="${impPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+              <polyline points="${clickPts}" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+              ${labelXs.map((lx,li) => `<text x="${lx}" y="${h+18}" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">${labels[li]}</text>`).join('')}
+            </svg>
+            <div style="position:absolute;top:6px;right:6px;display:flex;gap:14px;font-size:11px;">
+              <div style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:2.5px;background:#3b82f6;border-radius:2px;display:block;"></span><span style="color:var(--text-secondary);">Clicks</span></div>
+              <div style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:2.5px;background:#10b981;border-radius:2px;display:block;"></span><span style="color:var(--text-secondary);">Impressions</span></div>
+            </div></div>`;
+          }
+        }
+      } catch(e) { console.error('Trend chart error:', e); }
+
+      // ---- DEVICE BREAKDOWN (GSC) ----
+      try {
+        const devRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate, endDate, dimensions: ['device'], type: 'web' })
+        });
+        const devData = await devRes.json();
+        if (devData.rows) {
+          const totalC = devData.rows.reduce((s,r) => s + r.clicks, 0);
+          const devices = {};
+          devData.rows.forEach(r => { devices[r.keys[0].toUpperCase()] = r; });
+          const mob = devices['MOBILE'] || { clicks:0, impressions:0, ctr:0, position:0 };
+          const desk = devices['DESKTOP'] || { clicks:0, impressions:0, ctr:0, position:0 };
+          const tab = devices['TABLET'] || { clicks:0, impressions:0, ctr:0, position:0 };
+          const mobPct = totalC ? ((mob.clicks/totalC)*100).toFixed(1) : '0';
+          const deskPct = totalC ? ((desk.clicks/totalC)*100).toFixed(1) : '0';
+          const tabPct = totalC ? ((tab.clicks/totalC)*100).toFixed(1) : '0';
+
+          const devEl = document.getElementById('section-device');
+          if (devEl) {
+            const header = devEl.querySelector('.chart-header').outerHTML;
+            devEl.innerHTML = header + `
+              <div style="padding:16px 0;">
+                <div class="metric-row"><div><div class="metric-row-label">📱 Mobile</div><div class="progress-bar" style="width:200px;margin-top:6px;"><div class="progress-fill" style="width:${mobPct}%;background:var(--gradient-primary);"></div></div></div><div class="metric-row-value">${mobPct}%</div></div>
+                <div class="metric-row"><div><div class="metric-row-label">🖥 Desktop</div><div class="progress-bar" style="width:200px;margin-top:6px;"><div class="progress-fill" style="width:${deskPct}%;background:var(--gradient-success);"></div></div></div><div class="metric-row-value">${deskPct}%</div></div>
+                <div class="metric-row"><div><div class="metric-row-label">📟 Tablet</div><div class="progress-bar" style="width:200px;margin-top:6px;"><div class="progress-fill" style="width:${tabPct}%;background:var(--gradient-warning);"></div></div></div><div class="metric-row-value">${tabPct}%</div></div>
+              </div>
+              <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:16px;">
+                <div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Mobile vs Desktop CTR</div>
+                <div class="metric-row"><span class="metric-row-label">Mobile CTR</span><span class="metric-row-value" style="color:var(--accent-blue);">${((mob.ctr||0)*100).toFixed(2)}%</span></div>
+                <div class="metric-row"><span class="metric-row-label">Desktop CTR</span><span class="metric-row-value" style="color:var(--accent-emerald);">${((desk.ctr||0)*100).toFixed(2)}%</span></div>
+                <div class="metric-row"><span class="metric-row-label">Mobile Avg Pos</span><span class="metric-row-value" style="color:var(--accent-amber);">${(mob.position||0).toFixed(1)}</span></div>
+                <div class="metric-row"><span class="metric-row-label">Desktop Avg Pos</span><span class="metric-row-value" style="color:var(--accent-violet);">${(desk.position||0).toFixed(1)}</span></div>
+              </div>`;
+          }
+        }
+      } catch(e) { console.error('Device data error:', e); }
+
+      // ---- KEYWORD POSITION DISTRIBUTION (GSC) ----
+      try {
+        const kwRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate, endDate, dimensions: ['query'], rowLimit: 5000, type: 'web' })
+        });
+        const kwData = await kwRes.json();
+        if (kwData.rows) {
+          let t3=0, t10=0, t20=0, beyond=0;
+          kwData.rows.forEach(r => {
+            const p = r.position || 100;
+            if (p <= 3) t3++;
+            else if (p <= 10) t10++;
+            else if (p <= 20) t20++;
+            else beyond++;
+          });
+          const kwEl = document.getElementById('section-keyword-dist');
+          if (kwEl) {
+            const header = kwEl.querySelector('.chart-header').outerHTML;
+            kwEl.innerHTML = header + `
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 0;">
+                <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);"><div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-emerald);">${fmtNum(t3)}</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Top 3</div></div>
+                <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);"><div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-blue);">${fmtNum(t10)}</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Top 10</div></div>
+                <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.15);"><div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-amber);">${fmtNum(t20)}</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Top 20</div></div>
+                <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.15);"><div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-rose);">${fmtNum(beyond)}</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">20+</div></div>
+              </div>
+              <div style="padding-top:16px;border-top:1px solid var(--border);"><div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Total Tracked Keywords</div><div class="metric-row"><span class="metric-row-label">Total</span><span class="metric-row-value">${fmtNum(kwData.rows.length)} keywords</span></div></div>`;
+          }
+        }
+      } catch(e) { console.error('Keyword dist error:', e); }
+
+      // ---- SEARCH APPEARANCE (GSC) ----
+      try {
+        const saRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate, endDate, dimensions: ['searchAppearance'], type: 'web' })
+        });
+        const saData = await saRes.json();
+        const saEl = document.getElementById('section-search-appearance');
+        if (saData.rows && saData.rows.length > 0 && saEl) {
+          const header = saEl.querySelector('.chart-header').outerHTML;
+          const totalImp = saData.rows.reduce((s,r) => s + r.impressions, 0);
+          const totalClk = saData.rows.reduce((s,r) => s + r.clicks, 0);
+          const avgCtr = totalImp ? ((totalClk/totalImp)*100).toFixed(2) : '0';
+          let rows = saData.rows.sort((a,b) => b.impressions - a.impressions).slice(0,6).map(r => {
+            const ctr = r.impressions ? ((r.clicks/r.impressions)*100).toFixed(2) : '0';
+            return `<tr><td>${escHtml(r.keys[0])}</td><td class="mono">${fmtBig(r.impressions)}</td><td class="mono">${fmtBig(r.clicks)}</td><td class="mono" style="color:var(--accent-emerald);">${ctr}%</td></tr>`;
+          }).join('');
+          saEl.innerHTML = header + `<table class="data-table"><thead><tr><th>Feature</th><th>Impressions</th><th>Clicks</th><th>CTR</th></tr></thead><tbody>${rows}</tbody></table>
+            <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:12px;"><div class="metric-row"><span class="metric-row-label">Total Rich Impressions</span><span class="metric-row-value" style="color:var(--accent-blue);">${fmtBig(totalImp)}</span></div><div class="metric-row"><span class="metric-row-label">Rich Result CTR Avg</span><span class="metric-row-value" style="color:var(--accent-emerald);">${avgCtr}%</span></div></div>`;
+        } else if (saEl) {
+          showNoData(saEl, 'Search Appearance', 'No search appearance data available for this period.');
+        }
+      } catch(e) { console.error('Search appearance error:', e); }
+
+      // ---- MARK SECTIONS NOT AVAILABLE FROM GSC API ----
+      // CWV and Index Coverage are NOT available via GSC Search Analytics API
+      showNoData(document.getElementById('section-cwv'), 'Core Web Vitals', 'CWV data requires the Chrome UX Report API or PageSpeed Insights API. Not available via GSC Search Analytics API.');
+      showNoData(document.getElementById('section-index'), 'Index Coverage', 'Index coverage data requires the GSC URL Inspection API (not available in client-side OAuth). Use GSC directly for this data.');
+
     } catch(e) { console.error('GSC data fetch error:', e); }
   }
 
@@ -2766,54 +2915,47 @@ async function fetchAndPopulate(startDate, endDate) {
       const gaData = await gaRes.json();
 
       if (gaData.rows) {
-        // Find organic row for current and previous period
-        let orgCurrent = null, orgPrev = null;
-        let totalSessions = 0;
+        // Aggregate all channels for traffic sources donut
+        let channelData = {};
+        let totalAllSessions = 0;
         gaData.rows.forEach(row => {
-          const channel = row.dimensionValues[0].value.toLowerCase();
-          const dateRange = row.dimensionValues.length > 1 ? row.dimensionValues[1].value : '';
-          const isOrganic = channel.includes('organic');
+          const channel = row.dimensionValues[0].value;
           const sessions = parseFloat(row.metricValues[0].value) || 0;
-
-          // dateRangeIndex: 0 = current, 1 = previous
-          if (isOrganic) {
-            // GA4 returns rows for each dateRange. Check dateRange index via position.
-            if (!orgCurrent) {
-              orgCurrent = row;
-            } else if (!orgPrev) {
-              orgPrev = row;
-            }
-          }
-          totalSessions += sessions;
+          if (!channelData[channel]) channelData[channel] = 0;
+          channelData[channel] += sessions;
+          totalAllSessions += sessions;
         });
 
-        // Simpler approach: aggregate organic across date ranges
-        let curOrg = { sessions: 0, bounce: 0, duration: 0, pps: 0, conv: 0, count: 0 };
-        let prevOrg = { sessions: 0, bounce: 0, duration: 0, pps: 0, conv: 0, count: 0 };
+        // Traffic Sources section
+        const tsEl = document.getElementById('section-traffic-sources');
+        if (tsEl && totalAllSessions > 0) {
+          const sorted = Object.entries(channelData).sort((a,b) => b[1] - a[1]).slice(0, 5);
+          const colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#64748b'];
+          const header = tsEl.querySelector('.chart-header').outerHTML;
+          const topPct = totalAllSessions ? ((sorted[0][1]/totalAllSessions)*100).toFixed(0) : '0';
+          let legendHtml = sorted.map((ch, i) => {
+            const pct = ((ch[1]/totalAllSessions)*100).toFixed(0);
+            return `<div class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span> ${escHtml(ch[0])} <span class="legend-value">${pct}%</span></div>`;
+          }).join('');
+          tsEl.innerHTML = header + `<div class="donut-container"><div style="text-align:center;"><div style="font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;color:var(--accent-blue);">${topPct}%</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${escHtml(sorted[0][0])}</div></div><div class="donut-legend">${legendHtml}</div></div>`;
+        }
 
+        // Organic metrics for KPIs
+        let curOrg = { sessions:0, bounce:0, duration:0, pps:0, conv:0, count:0 };
+        let prevOrg = { sessions:0, bounce:0, duration:0, pps:0, conv:0, count:0 };
         gaData.rows.forEach(row => {
           const channel = row.dimensionValues[0].value.toLowerCase();
           if (!channel.includes('organic')) return;
           const m = row.metricValues;
-          const obj = {
-            sessions: parseFloat(m[0].value) || 0,
-            bounce: parseFloat(m[1].value) || 0,
-            duration: parseFloat(m[2].value) || 0,
-            pps: parseFloat(m[3].value) || 0,
-            conv: parseFloat(m[4].value) || 0
-          };
-          // GA4 with 2 dateRanges duplicates rows: first half current, second half previous
-          if (curOrg.count === 0 || curOrg.sessions > 0 && prevOrg.count === 0) {
-            if (curOrg.count === 0) { curOrg = {...obj, count: 1}; }
-            else { prevOrg = {...obj, count: 1}; }
-          }
+          const obj = { sessions:parseFloat(m[0].value)||0, bounce:parseFloat(m[1].value)||0, duration:parseFloat(m[2].value)||0, pps:parseFloat(m[3].value)||0, conv:parseFloat(m[4].value)||0 };
+          if (curOrg.count === 0) { curOrg = {...obj, count:1}; }
+          else if (prevOrg.count === 0) { prevOrg = {...obj, count:1}; }
         });
 
         if (curOrg.sessions > 0) {
           document.getElementById('kpi-sessions').textContent = fmtNum(Math.round(curOrg.sessions));
           document.getElementById('kpi-conversions').textContent = fmtNum(Math.round(curOrg.conv));
           document.getElementById('kpi-bounce').textContent = (curOrg.bounce * 100).toFixed(1) + '%';
-
           const durMin = Math.floor(curOrg.duration / 60);
           const durSec = Math.round(curOrg.duration % 60);
           document.getElementById('kpi-duration').textContent = durMin + 'm ' + durSec + 's';
@@ -2823,9 +2965,148 @@ async function fetchAndPopulate(startDate, endDate) {
             setChange('kpi-sessions-chg', curOrg.sessions, prevOrg.sessions, '%');
             setChange('kpi-conversions-chg', curOrg.conv, prevOrg.conv, '%');
           }
+
+          // Update conversion funnel with real data
+          const funnelEl = document.getElementById('section-funnel');
+          if (funnelEl) {
+            const impVal = document.getElementById('kpi-impressions') ? document.getElementById('kpi-impressions').textContent : '0';
+            const clickVal = document.getElementById('kpi-clicks') ? document.getElementById('kpi-clicks').textContent : '0';
+            const header = funnelEl.querySelector('.chart-header').outerHTML;
+            const ctrPct = curOrg.sessions > 0 ? ((curOrg.conv / curOrg.sessions) * 100).toFixed(2) : '0';
+            funnelEl.innerHTML = header + `<div style="padding:16px 0;">
+              <div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Organic Sessions</span><span class="mono" style="font-size:13px;">${fmtNum(Math.round(curOrg.sessions))}</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--gradient-primary);"></div></div></div>
+              <div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Engaged Sessions</span><span class="mono" style="font-size:13px;">${fmtNum(Math.round(curOrg.sessions * (1-curOrg.bounce)))}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${((1-curOrg.bounce)*100).toFixed(0)}%;background:linear-gradient(135deg,#8b5cf6,#06b6d4);"></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${((1-curOrg.bounce)*100).toFixed(1)}% engagement rate</div></div>
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;">Conversions</span><span class="mono" style="font-size:13px;color:var(--accent-emerald);">${fmtNum(Math.round(curOrg.conv))}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(parseFloat(ctrPct)*5, 100)}%;background:var(--accent-emerald);"></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${ctrPct}% conversion rate</div></div>
+            </div>`;
+          }
+        } else {
+          // No organic data found
+          document.getElementById('kpi-sessions').textContent = '0';
+          document.getElementById('kpi-conversions').textContent = '0';
+          document.getElementById('kpi-bounce').textContent = 'N/A';
+          document.getElementById('kpi-duration').textContent = 'N/A';
+          document.getElementById('kpi-pps').textContent = 'N/A';
         }
       }
+
+      // ---- NEW vs RETURNING USERS (GA4) ----
+      try {
+        const userRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${liveState.ga4Token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateRanges: [{ startDate, endDate }],
+            dimensions: [{ name: 'newVsReturning' }],
+            metrics: [{ name: 'sessions' }, { name: 'bounceRate' }, { name: 'averageSessionDuration' }],
+            dimensionFilter: { filter: { fieldName: 'sessionDefaultChannelGroup', stringFilter: { matchType: 'CONTAINS', value: 'Organic', caseSensitive: false } } }
+          })
+        });
+        const userData = await userRes.json();
+        const usEl = document.getElementById('section-user-segments');
+        if (userData.rows && usEl) {
+          let newU = { sessions:0, bounce:0, dur:0 }, retU = { sessions:0, bounce:0, dur:0 };
+          userData.rows.forEach(r => {
+            const type = r.dimensionValues[0].value.toLowerCase();
+            const m = r.metricValues;
+            if (type === 'new') { newU = { sessions:parseFloat(m[0].value)||0, bounce:parseFloat(m[1].value)||0, dur:parseFloat(m[2].value)||0 }; }
+            else { retU = { sessions:parseFloat(m[0].value)||0, bounce:parseFloat(m[1].value)||0, dur:parseFloat(m[2].value)||0 }; }
+          });
+          const header = usEl.querySelector('.chart-header').outerHTML;
+          const fmtDur = (s) => { const m=Math.floor(s/60), sec=Math.round(s%60); return m+'m '+sec+'s'; };
+          usEl.innerHTML = header + `
+            <div style="display:flex;gap:24px;padding:16px 0;">
+              <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">New Users</div><div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-blue);margin:8px 0;">${fmtNum(Math.round(newU.sessions))}</div></div>
+              <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.12);"><div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">Returning</div><div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-violet);margin:8px 0;">${fmtNum(Math.round(retU.sessions))}</div></div>
+            </div>
+            <div style="padding-top:16px;border-top:1px solid var(--border);"><div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Engagement by User Type</div>
+              <div class="metric-row"><span class="metric-row-label">New User Bounce Rate</span><span class="metric-row-value">${(newU.bounce*100).toFixed(1)}%</span></div>
+              <div class="metric-row"><span class="metric-row-label">Returning Bounce Rate</span><span class="metric-row-value" style="color:var(--accent-emerald);">${(retU.bounce*100).toFixed(1)}%</span></div>
+              <div class="metric-row"><span class="metric-row-label">New User Avg Duration</span><span class="metric-row-value">${fmtDur(newU.dur)}</span></div>
+              <div class="metric-row"><span class="metric-row-label">Returning Avg Duration</span><span class="metric-row-value" style="color:var(--accent-emerald);">${fmtDur(retU.dur)}</span></div>
+            </div>`;
+        }
+      } catch(e) { console.error('User segments error:', e); }
+
     } catch(e) { console.error('GA4 data fetch error:', e); }
+  }
+
+  // ---- INSIGHTS: Generate from real data ----
+  const insEl = document.getElementById('section-insights');
+  if (insEl && liveState.gscToken) {
+    const header = insEl.querySelector('.chart-header').outerHTML;
+    const clicks = document.getElementById('kpi-clicks') ? document.getElementById('kpi-clicks').textContent : '0';
+    const position = document.getElementById('kpi-position') ? document.getElementById('kpi-position').textContent : '0';
+    const bounce = document.getElementById('kpi-bounce') ? document.getElementById('kpi-bounce').textContent : 'N/A';
+    insEl.innerHTML = header + `
+      <div class="insight-item"><div class="insight-icon" style="background:rgba(59,130,246,0.12);">📊</div><div class="insight-text"><strong>${clicks} total clicks</strong> recorded in the selected period with an average position of <strong>${position}</strong>.</div></div>
+      <div class="insight-item"><div class="insight-icon" style="background:rgba(245,158,11,0.12);">📱</div><div class="insight-text">Bounce rate is <strong>${bounce}</strong>. ${parseFloat(bounce) > 50 ? 'Consider improving page load speed and content relevance.' : 'This is a healthy bounce rate — keep it up!'}</div></div>
+      <div class="insight-item"><div class="insight-icon" style="background:rgba(16,185,129,0.12);">💡</div><div class="insight-text">Data is pulled <strong>live from your GSC & GA4</strong> accounts. Use the date picker to analyze different periods.</div></div>
+    `;
+  }
+
+  // ---- ORGANIC REVENUE & CONV RATE ----
+  if (liveState.ga4Token && liveState.ga4Property) {
+    const property = liveState.ga4Property.includes('properties/') ? liveState.ga4Property : `properties/${liveState.ga4Property}`;
+    try {
+      const revRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${liveState.ga4Token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate }],
+          dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+          metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'totalRevenue' }]
+        })
+      });
+      const revData = await revRes.json();
+      if (revData.rows) {
+        let orgSessions = 0, orgConv = 0, orgRev = 0;
+        revData.rows.forEach(r => {
+          if (r.dimensionValues[0].value.toLowerCase().includes('organic')) {
+            orgSessions += parseFloat(r.metricValues[0].value) || 0;
+            orgConv += parseFloat(r.metricValues[1].value) || 0;
+            orgRev += parseFloat(r.metricValues[2].value) || 0;
+          }
+        });
+        const revEl = document.getElementById('kpi-rev');
+        const crEl = document.getElementById('kpi-cr');
+        const revChg = document.getElementById('kpi-rev-chg');
+        const crChg = document.getElementById('kpi-cr-chg');
+        if (revEl) revEl.textContent = orgRev > 0 ? '$' + fmtBig(orgRev) : 'N/A';
+        if (crEl) crEl.textContent = orgSessions > 0 ? ((orgConv/orgSessions)*100).toFixed(2) + '%' : 'N/A';
+        if (revChg) revChg.textContent = orgRev > 0 ? '' : 'No ecommerce data';
+        if (revChg) revChg.className = 'kpi-change';
+        if (crChg) crChg.textContent = '';
+        if (crChg) crChg.className = 'kpi-change';
+      }
+    } catch(e) {
+      const revEl = document.getElementById('kpi-rev');
+      const crEl = document.getElementById('kpi-cr');
+      if (revEl) revEl.textContent = 'N/A';
+      if (crEl) crEl.textContent = 'N/A';
+    }
+  } else {
+    const revEl = document.getElementById('kpi-rev');
+    const crEl = document.getElementById('kpi-cr');
+    if (revEl) revEl.textContent = 'N/A';
+    if (crEl) crEl.textContent = 'N/A';
+  }
+
+  // ---- ENGAGEMENT CHART: Replace with note about live data ----
+  const engEl = document.getElementById('section-engagement');
+  if (engEl && liveState.gscToken) {
+    const header = engEl.querySelector('.chart-header').outerHTML;
+    const sessions = document.getElementById('kpi-sessions') ? document.getElementById('kpi-sessions').textContent : '0';
+    const bounce = document.getElementById('kpi-bounce') ? document.getElementById('kpi-bounce').textContent : 'N/A';
+    const dur = document.getElementById('kpi-duration') ? document.getElementById('kpi-duration').textContent : 'N/A';
+    engEl.innerHTML = header + `
+      <div style="padding:24px 0;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+          <div style="text-align:center;padding:20px;border-radius:var(--radius-sm);background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.12);"><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">Organic Sessions</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--accent-violet);margin-top:8px;">${sessions}</div></div>
+          <div style="text-align:center;padding:20px;border-radius:var(--radius-sm);background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.12);"><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">Bounce Rate</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--accent-cyan);margin-top:8px;">${bounce}</div></div>
+          <div style="text-align:center;padding:20px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);"><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">Avg Duration</div><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--accent-emerald);margin-top:8px;">${dur}</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;border-radius:var(--radius-sm);background:var(--bg-primary);">📊 Engagement metrics pulled live from GA4 for the selected date range</div>
+      </div>`;
   }
 
   // Restore opacity
@@ -2872,6 +3153,13 @@ function escHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function showNoData(el, title, msg) {
+  if (!el) return;
+  const header = el.querySelector('.chart-header');
+  const headerHtml = header ? header.outerHTML : `<div class="chart-header"><div><div class="chart-title">${title}</div></div></div>`;
+  el.innerHTML = headerHtml + `<div style="padding:32px 16px;text-align:center;"><div style="font-size:24px;margin-bottom:8px;opacity:0.4;">📭</div><div style="font-size:13px;color:var(--text-muted);line-height:1.6;">${msg}</div></div>`;
 }
 
 function getFlag(countryCode) {
