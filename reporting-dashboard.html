@@ -1302,6 +1302,62 @@ body::before {
 }
 .demo-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-amber); animation: pulse-dot 2s infinite; }
 
+/* Back button */
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; cursor: pointer; transition: all 0.2s;
+}
+.back-btn:hover { border-color: var(--border-active); color: var(--text-primary); background: var(--bg-card-hover); }
+
+/* Disconnect / Logout button */
+.disconnect-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  border: 1px solid rgba(244,63,94,0.2); background: rgba(244,63,94,0.06);
+  color: var(--accent-rose); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.disconnect-btn:hover { border-color: rgba(244,63,94,0.4); background: rgba(244,63,94,0.12); }
+
+/* Property name display */
+.property-name {
+  font-size: 12px; color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Custom Date Picker Dropdown */
+.date-picker-dropdown {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 50;
+  margin-top: 6px; padding: 20px; min-width: 320px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-card);
+}
+.date-picker-dropdown.show { display: block; }
+
+.date-picker-dropdown label {
+  font-size: 11px; color: var(--text-muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px;
+}
+.date-picker-dropdown input[type="date"] {
+  width: 100%; padding: 10px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg-primary);
+  color: var(--text-primary); font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; margin-bottom: 14px;
+}
+.date-picker-dropdown input[type="date"]:focus { outline: none; border-color: var(--accent-blue); }
+
+.date-picker-apply {
+  width: 100%; padding: 10px; border: none; border-radius: var(--radius-sm);
+  background: var(--gradient-primary); color: white; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.date-picker-apply:hover { transform: translateY(-1px); }
+
+.date-range-btn-wrap { position: relative; }
+
 </style>
 </head>
 <body>
@@ -1430,6 +1486,10 @@ body::before {
   <!-- Top Navigation -->
   <nav class="topnav">
     <div class="topnav-left">
+      <button class="back-btn" onclick="goBack()" title="Back to login">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
       <div class="nav-logo">SEO Command Center</div>
       <div class="nav-divider"></div>
       <div class="connection-pills" id="connectionPills">
@@ -1437,22 +1497,36 @@ body::before {
         <div class="conn-pill"><span class="dot"></span> GA4 Connected</div>
       </div>
       <div class="demo-badge" id="demoBadge"><span class="dot"></span> Demo Mode</div>
+      <div class="property-name" id="propertyName" style="display:none;"></div>
     </div>
     <div class="topnav-right">
-      <span style="font-size:12px;color:var(--text-muted);">Last synced: 2 min ago</span>
-      <button style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">
+      <span style="font-size:12px;color:var(--text-muted);" id="syncTime">Last synced: 2 min ago</span>
+      <button style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="refreshDashboard()">
         ↻ Refresh
+      </button>
+      <button class="disconnect-btn" id="disconnectBtn" onclick="disconnectAccounts()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Disconnect
       </button>
     </div>
   </nav>
 
   <!-- Controls Bar -->
   <div class="controls-bar">
-    <button class="date-range-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span id="dateRangeLabel">Jan 28 – Feb 27, 2026</span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
+    <div class="date-range-btn-wrap">
+      <button class="date-range-btn" onclick="toggleDatePicker()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="dateRangeLabel">Jan 28 – Feb 27, 2026</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="date-picker-dropdown" id="datePickerDropdown">
+        <label>Start Date</label>
+        <input type="date" id="customStartDate" value="2026-01-28" />
+        <label>End Date</label>
+        <input type="date" id="customEndDate" value="2026-02-27" />
+        <button class="date-picker-apply" onclick="applyCustomDates()">Apply Date Range</button>
+      </div>
+    </div>
 
     <div class="preset-pills">
       <button class="preset-pill" onclick="setPreset(this, '7d')">7D</button>
@@ -1498,8 +1572,8 @@ body::before {
           <span class="kpi-label">Total Clicks</span>
           <span class="kpi-source gsc">GSC</span>
         </div>
-        <div class="kpi-value">284,921</div>
-        <span class="kpi-change up">↑ 12.4%</span>
+        <div class="kpi-value" id="kpi-clicks">284,921</div>
+        <span class="kpi-change up" id="kpi-clicks-chg">↑ 12.4%</span>
         <div class="kpi-compare">vs prev: <span>253,490</span></div>
         <div class="kpi-sparkline">
           <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
@@ -1513,8 +1587,8 @@ body::before {
           <span class="kpi-label">Impressions</span>
           <span class="kpi-source gsc">GSC</span>
         </div>
-        <div class="kpi-value">8.42M</div>
-        <span class="kpi-change up">↑ 8.7%</span>
+        <div class="kpi-value" id="kpi-impressions">8.42M</div>
+        <span class="kpi-change up" id="kpi-impressions-chg">↑ 8.7%</span>
         <div class="kpi-compare">vs prev: <span>7.75M</span></div>
         <div class="kpi-sparkline">
           <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
@@ -1528,8 +1602,8 @@ body::before {
           <span class="kpi-label">Avg CTR</span>
           <span class="kpi-source gsc">GSC</span>
         </div>
-        <div class="kpi-value">3.38%</div>
-        <span class="kpi-change up">↑ 0.3pp</span>
+        <div class="kpi-value" id="kpi-ctr">3.38%</div>
+        <span class="kpi-change up" id="kpi-ctr-chg">↑ 0.3pp</span>
         <div class="kpi-compare">vs prev: <span>3.08%</span></div>
         <div class="kpi-sparkline">
           <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
@@ -1543,8 +1617,8 @@ body::before {
           <span class="kpi-label">Avg Position</span>
           <span class="kpi-source gsc">GSC</span>
         </div>
-        <div class="kpi-value">14.2</div>
-        <span class="kpi-change up">↑ 1.8</span>
+        <div class="kpi-value" id="kpi-position">14.2</div>
+        <span class="kpi-change up" id="kpi-position-chg">↑ 1.8</span>
         <div class="kpi-compare">vs prev: <span>16.0</span></div>
         <div class="kpi-sparkline">
           <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
@@ -1558,8 +1632,8 @@ body::before {
           <span class="kpi-label">Organic Sessions</span>
           <span class="kpi-source ga4">GA4</span>
         </div>
-        <div class="kpi-value">196,345</div>
-        <span class="kpi-change up">↑ 15.2%</span>
+        <div class="kpi-value" id="kpi-sessions">196,345</div>
+        <span class="kpi-change up" id="kpi-sessions-chg">↑ 15.2%</span>
         <div class="kpi-compare">vs prev: <span>170,439</span></div>
         <div class="kpi-sparkline">
           <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
@@ -1573,8 +1647,8 @@ body::before {
           <span class="kpi-label">Organic Conv.</span>
           <span class="kpi-source ga4">GA4</span>
         </div>
-        <div class="kpi-value">4,217</div>
-        <span class="kpi-change up">↑ 22.1%</span>
+        <div class="kpi-value" id="kpi-conversions">4,217</div>
+        <span class="kpi-change up" id="kpi-conversions-chg">↑ 22.1%</span>
         <div class="kpi-compare">vs prev: <span>3,454</span></div>
         <div class="kpi-sparkline">
           <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
@@ -1591,7 +1665,7 @@ body::before {
           <span class="kpi-label">Bounce Rate</span>
           <span class="kpi-source ga4">GA4</span>
         </div>
-        <div class="kpi-value">38.4%</div>
+        <div class="kpi-value" id="kpi-bounce">38.4%</div>
         <span class="kpi-change up">↓ 3.2pp</span>
       </div>
       <div class="kpi-card emerald animate-in delay-2">
@@ -1599,7 +1673,7 @@ body::before {
           <span class="kpi-label">Avg Session Duration</span>
           <span class="kpi-source ga4">GA4</span>
         </div>
-        <div class="kpi-value">3m 24s</div>
+        <div class="kpi-value" id="kpi-duration">3m 24s</div>
         <span class="kpi-change up">↑ 18s</span>
       </div>
       <div class="kpi-card amber animate-in delay-3">
@@ -1607,7 +1681,7 @@ body::before {
           <span class="kpi-label">Pages / Session</span>
           <span class="kpi-source ga4">GA4</span>
         </div>
-        <div class="kpi-value">2.87</div>
+        <div class="kpi-value" id="kpi-pps">2.87</div>
         <span class="kpi-change up">↑ 0.21</span>
       </div>
       <div class="kpi-card violet animate-in delay-4">
@@ -1731,7 +1805,7 @@ body::before {
         </div>
         <table class="data-table">
           <thead><tr><th>Query</th><th>Clicks</th><th>Pos</th></tr></thead>
-          <tbody>
+          <tbody id="tbody-queries">
             <tr><td class="url-cell">best seo tools 2026</td><td class="mono">8,421</td><td><span class="position-badge top3">2.1</span></td></tr>
             <tr><td class="url-cell">keyword research guide</td><td class="mono">6,892</td><td><span class="position-badge top3">1.4</span></td></tr>
             <tr><td class="url-cell">on page seo checklist</td><td class="mono">5,234</td><td><span class="position-badge top10">4.7</span></td></tr>
@@ -1754,7 +1828,7 @@ body::before {
         </div>
         <table class="data-table">
           <thead><tr><th>Page</th><th>Sessions</th><th>Conv</th></tr></thead>
-          <tbody>
+          <tbody id="tbody-pages">
             <tr><td class="url-cell">/blog/seo-tools-guide</td><td class="mono">14,892</td><td class="mono" style="color:var(--accent-emerald);">342</td></tr>
             <tr><td class="url-cell">/resources/keyword-research</td><td class="mono">11,234</td><td class="mono" style="color:var(--accent-emerald);">287</td></tr>
             <tr><td class="url-cell">/blog/on-page-seo</td><td class="mono">9,876</td><td class="mono" style="color:var(--accent-emerald);">198</td></tr>
@@ -1777,7 +1851,7 @@ body::before {
         </div>
         <table class="data-table">
           <thead><tr><th>Country</th><th>Clicks</th><th>Share</th></tr></thead>
-          <tbody>
+          <tbody id="tbody-countries">
             <tr><td>🇺🇸 United States</td><td class="mono">98,234</td><td class="mono">34.5%</td></tr>
             <tr><td>🇬🇧 United Kingdom</td><td class="mono">38,921</td><td class="mono">13.7%</td></tr>
             <tr><td>🇮🇳 India</td><td class="mono">31,456</td><td class="mono">11.0%</td></tr>
@@ -2546,55 +2620,429 @@ async function launchLive() {
   document.getElementById('loginOverlay').classList.add('hidden');
   document.getElementById('dashboardWrapper').style.display = 'block';
 
-  // Fetch real data if tokens exist
+  // Save session so it persists across page reloads
+  saveSession();
+  showPropertyName();
+  document.getElementById('demoBadge').style.display = 'none';
+
+  const endDate = new Date().toISOString().split('T')[0];
+  const startDate = new Date(Date.now() - 28*24*60*60*1000).toISOString().split('T')[0];
+  await fetchAndPopulate(startDate, endDate);
+  document.getElementById('syncTime').textContent = 'Last synced: just now';
+}
+
+async function launchLiveWithDates(startDate, endDate) {
+  await fetchAndPopulate(startDate, endDate);
+  document.getElementById('syncTime').textContent = 'Last synced: just now';
+}
+
+async function fetchAndPopulate(startDate, endDate) {
+
+  // Show loading state on KPIs
+  document.querySelectorAll('.kpi-value').forEach(el => { el.style.opacity = '0.3'; el.textContent = '...'; });
+
+  const daysDiff = Math.round((new Date(endDate) - new Date(startDate)) / (24*60*60*1000));
+  const prevEnd = new Date(new Date(startDate).getTime() - 24*60*60*1000).toISOString().split('T')[0];
+  const prevStart = new Date(new Date(startDate).getTime() - (daysDiff+1)*24*60*60*1000).toISOString().split('T')[0];
+
+  // ======== FETCH GSC DATA ========
   if (liveState.gscToken && liveState.gscProperty) {
     try {
-      const endDate = new Date().toISOString().split('T')[0];
-      const startDate = new Date(Date.now() - 28*24*60*60*1000).toISOString().split('T')[0];
-      const res = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+      // Overall totals
+      const totalRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate, endDate, dimensions: ['page'], rowLimit: 5000, type: 'web' })
+        body: JSON.stringify({ startDate, endDate, type: 'web' })
       });
-      const data = await res.json();
-      if (data.rows) console.log('GSC data loaded:', data.rows.length, 'rows');
+      const totalData = await totalRes.json();
+
+      // Previous period for comparison
+      const prevRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate: prevStart, endDate: prevEnd, type: 'web' })
+      });
+      const prevData = await prevRes.json();
+
+      if (totalData.rows && totalData.rows.length > 0) {
+        const r = totalData.rows[0];
+        const clicks = r.clicks || 0;
+        const impressions = r.impressions || 0;
+        const ctr = (r.ctr || 0) * 100;
+        const position = r.position || 0;
+
+        document.getElementById('kpi-clicks').textContent = fmtNum(clicks);
+        document.getElementById('kpi-impressions').textContent = fmtBig(impressions);
+        document.getElementById('kpi-ctr').textContent = ctr.toFixed(2) + '%';
+        document.getElementById('kpi-position').textContent = position.toFixed(1);
+
+        // Comparison
+        if (prevData.rows && prevData.rows.length > 0) {
+          const p = prevData.rows[0];
+          setChange('kpi-clicks-chg', clicks, p.clicks || 0, '%');
+          setChange('kpi-impressions-chg', impressions, p.impressions || 0, '%');
+          setChange('kpi-ctr-chg', ctr, (p.ctr||0)*100, 'pp');
+          setChange('kpi-position-chg', position, p.position || 0, 'pos');
+        }
+      }
+
+      // Top Queries
+      const qRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate, endDate, dimensions: ['query'], rowLimit: 8, type: 'web' })
+      });
+      const qData = await qRes.json();
+      if (qData.rows) {
+        const tbody = document.getElementById('tbody-queries');
+        tbody.innerHTML = qData.rows.map(r => {
+          const pos = r.position || 0;
+          const cls = pos <= 3 ? 'top3' : pos <= 10 ? 'top10' : pos <= 20 ? 'top20' : 'below';
+          return `<tr><td class="url-cell">${escHtml(r.keys[0])}</td><td class="mono">${fmtNum(r.clicks)}</td><td><span class="position-badge ${cls}">${pos.toFixed(1)}</span></td></tr>`;
+        }).join('');
+      }
+
+      // Top Pages
+      const pRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate, endDate, dimensions: ['page'], rowLimit: 8, type: 'web' })
+      });
+      const pData = await pRes.json();
+      if (pData.rows) {
+        const tbody = document.getElementById('tbody-pages');
+        tbody.innerHTML = pData.rows.map(r => {
+          let path;
+          try { path = new URL(r.keys[0]).pathname; } catch(e) { path = r.keys[0]; }
+          return `<tr><td class="url-cell">${escHtml(path)}</td><td class="mono">${fmtNum(r.clicks)}</td><td class="mono" style="color:var(--accent-emerald);">${fmtNum(r.impressions)}</td></tr>`;
+        }).join('');
+        // Update table header for GSC context
+        const pageHead = tbody.closest('table').querySelector('thead');
+        pageHead.innerHTML = '<tr><th>Page</th><th>Clicks</th><th>Impressions</th></tr>';
+      }
+
+      // Top Countries
+      const cRes = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate, endDate, dimensions: ['country'], rowLimit: 8, type: 'web' })
+      });
+      const cData = await cRes.json();
+      if (cData.rows) {
+        const totalClicks = cData.rows.reduce((s,r) => s + r.clicks, 0);
+        const tbody = document.getElementById('tbody-countries');
+        tbody.innerHTML = cData.rows.map(r => {
+          const share = ((r.clicks / totalClicks) * 100).toFixed(1);
+          return `<tr><td>${getFlag(r.keys[0])} ${r.keys[0].toUpperCase()}</td><td class="mono">${fmtNum(r.clicks)}</td><td class="mono">${share}%</td></tr>`;
+        }).join('');
+      }
+
     } catch(e) { console.error('GSC data fetch error:', e); }
   }
+
+  // ======== FETCH GA4 DATA ========
   if (liveState.ga4Token && liveState.ga4Property) {
+    const property = liveState.ga4Property.includes('properties/') ? liveState.ga4Property : `properties/${liveState.ga4Property}`;
     try {
-      const property = liveState.ga4Property.includes('properties/') ? liveState.ga4Property : `properties/${liveState.ga4Property}`;
-      const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
+      // Organic sessions, bounce, duration, pages/session
+      const gaRes = await fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${liveState.ga4Token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          dateRanges: [{ startDate: '28daysAgo', endDate: 'today' }],
+          dateRanges: [
+            { startDate: startDate, endDate: endDate },
+            { startDate: prevStart, endDate: prevEnd }
+          ],
           dimensions: [{ name: 'sessionDefaultChannelGroup' }],
-          metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'bounceRate' }]
+          metrics: [
+            { name: 'sessions' },
+            { name: 'bounceRate' },
+            { name: 'averageSessionDuration' },
+            { name: 'screenPageViewsPerSession' },
+            { name: 'conversions' }
+          ]
         })
       });
-      const data = await res.json();
-      if (data.rows) console.log('GA4 data loaded:', data.rows.length, 'rows');
+      const gaData = await gaRes.json();
+
+      if (gaData.rows) {
+        // Find organic row for current and previous period
+        let orgCurrent = null, orgPrev = null;
+        let totalSessions = 0;
+        gaData.rows.forEach(row => {
+          const channel = row.dimensionValues[0].value.toLowerCase();
+          const dateRange = row.dimensionValues.length > 1 ? row.dimensionValues[1].value : '';
+          const isOrganic = channel.includes('organic');
+          const sessions = parseFloat(row.metricValues[0].value) || 0;
+
+          // dateRangeIndex: 0 = current, 1 = previous
+          if (isOrganic) {
+            // GA4 returns rows for each dateRange. Check dateRange index via position.
+            if (!orgCurrent) {
+              orgCurrent = row;
+            } else if (!orgPrev) {
+              orgPrev = row;
+            }
+          }
+          totalSessions += sessions;
+        });
+
+        // Simpler approach: aggregate organic across date ranges
+        let curOrg = { sessions: 0, bounce: 0, duration: 0, pps: 0, conv: 0, count: 0 };
+        let prevOrg = { sessions: 0, bounce: 0, duration: 0, pps: 0, conv: 0, count: 0 };
+
+        gaData.rows.forEach(row => {
+          const channel = row.dimensionValues[0].value.toLowerCase();
+          if (!channel.includes('organic')) return;
+          const m = row.metricValues;
+          const obj = {
+            sessions: parseFloat(m[0].value) || 0,
+            bounce: parseFloat(m[1].value) || 0,
+            duration: parseFloat(m[2].value) || 0,
+            pps: parseFloat(m[3].value) || 0,
+            conv: parseFloat(m[4].value) || 0
+          };
+          // GA4 with 2 dateRanges duplicates rows: first half current, second half previous
+          if (curOrg.count === 0 || curOrg.sessions > 0 && prevOrg.count === 0) {
+            if (curOrg.count === 0) { curOrg = {...obj, count: 1}; }
+            else { prevOrg = {...obj, count: 1}; }
+          }
+        });
+
+        if (curOrg.sessions > 0) {
+          document.getElementById('kpi-sessions').textContent = fmtNum(Math.round(curOrg.sessions));
+          document.getElementById('kpi-conversions').textContent = fmtNum(Math.round(curOrg.conv));
+          document.getElementById('kpi-bounce').textContent = (curOrg.bounce * 100).toFixed(1) + '%';
+
+          const durMin = Math.floor(curOrg.duration / 60);
+          const durSec = Math.round(curOrg.duration % 60);
+          document.getElementById('kpi-duration').textContent = durMin + 'm ' + durSec + 's';
+          document.getElementById('kpi-pps').textContent = curOrg.pps.toFixed(2);
+
+          if (prevOrg.sessions > 0) {
+            setChange('kpi-sessions-chg', curOrg.sessions, prevOrg.sessions, '%');
+            setChange('kpi-conversions-chg', curOrg.conv, prevOrg.conv, '%');
+          }
+        }
+      }
     } catch(e) { console.error('GA4 data fetch error:', e); }
   }
 
+  // Restore opacity
+  document.querySelectorAll('.kpi-value').forEach(el => { el.style.opacity = '1'; });
   generateHeatmap();
 }
 
-// ============ CONTROLS (unchanged) ============
+// ============ HELPER FUNCTIONS ============
+function fmtNum(n) {
+  if (n == null) return '0';
+  return Math.round(n).toLocaleString();
+}
+
+function fmtBig(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return Math.round(n).toLocaleString();
+}
+
+function setChange(id, current, previous, type) {
+  const el = document.getElementById(id);
+  if (!el || !previous) return;
+
+  if (type === 'pos') {
+    // For position, lower is better
+    const diff = previous - current;
+    const isUp = diff > 0;
+    el.className = 'kpi-change ' + (isUp ? 'up' : 'down');
+    el.textContent = (isUp ? '↑ ' : '↓ ') + Math.abs(diff).toFixed(1);
+  } else if (type === 'pp') {
+    const diff = current - previous;
+    const isUp = diff > 0;
+    el.className = 'kpi-change ' + (isUp ? 'up' : 'down');
+    el.textContent = (isUp ? '↑ ' : '↓ ') + Math.abs(diff).toFixed(2) + 'pp';
+  } else {
+    const pctChange = ((current - previous) / previous) * 100;
+    const isUp = pctChange > 0;
+    el.className = 'kpi-change ' + (isUp ? 'up' : 'down');
+    el.textContent = (isUp ? '↑ ' : '↓ ') + Math.abs(pctChange).toFixed(1) + '%';
+  }
+}
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function getFlag(countryCode) {
+  const flags = { 'usa':'🇺🇸','gbr':'🇬🇧','ind':'🇮🇳','deu':'🇩🇪','can':'🇨🇦','aus':'🇦🇺','fra':'🇫🇷','bra':'🇧🇷','jpn':'🇯🇵','kor':'🇰🇷','mex':'🇲🇽','esp':'🇪🇸','ita':'🇮🇹','nld':'🇳🇱','rus':'🇷🇺','chn':'🇨🇳','idn':'🇮🇩','tur':'🇹🇷','tha':'🇹🇭','phl':'🇵🇭','pol':'🇵🇱','sgp':'🇸🇬','mys':'🇲🇾','zaf':'🇿🇦','are':'🇦🇪','sau':'🇸🇦','arg':'🇦🇷','col':'🇨🇴','chl':'🇨🇱','pak':'🇵🇰','bgd':'🇧🇩','nga':'🇳🇬','ken':'🇰🇪','egy':'🇪🇬','ukr':'🇺🇦','rou':'🇷🇴','swe':'🇸🇪','che':'🇨🇭','aut':'🇦🇹','bel':'🇧🇪','nor':'🇳🇴','dnk':'🇩🇰','fin':'🇫🇮','irl':'🇮🇪','prt':'🇵🇹','nzl':'🇳🇿','hkg':'🇭🇰','twn':'🇹🇼','vnm':'🇻🇳','cze':'🇨🇿','grc':'🇬🇷','hun':'🇭🇺','isr':'🇮🇱','per':'🇵🇪' };
+  return flags[(countryCode||'').toLowerCase()] || '🌍';
+}
+
+// ================================================================
+//  SESSION PERSISTENCE — Save/restore tokens in sessionStorage
+// ================================================================
+function saveSession() {
+  try {
+    sessionStorage.setItem('seo_dash_live', JSON.stringify(liveState));
+  } catch(e) {}
+}
+
+function loadSession() {
+  try {
+    const saved = sessionStorage.getItem('seo_dash_live');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.gscToken && parsed.ga4Token && parsed.gscConnected && parsed.ga4Connected) {
+        liveState = parsed;
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+function clearSession() {
+  try { sessionStorage.removeItem('seo_dash_live'); } catch(e) {}
+}
+
+// Auto-restore on page load
+window.addEventListener('DOMContentLoaded', () => {
+  if (loadSession()) {
+    // Auto-launch into dashboard with saved tokens
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('dashboardWrapper').style.display = 'block';
+    showPropertyName();
+    document.getElementById('syncTime').textContent = 'Session restored';
+    launchLive();
+  }
+});
+
+// ================================================================
+//  BACK BUTTON — Return to login screen (does NOT disconnect)
+// ================================================================
+function goBack() {
+  document.getElementById('dashboardWrapper').style.display = 'none';
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+// ================================================================
+//  DISCONNECT — Clear tokens and return to login
+// ================================================================
+function disconnectAccounts() {
+  if (!confirm('Disconnect from GSC & GA4? You will need to re-authenticate.')) return;
+  liveState = { clientId:'', gscToken:null, ga4Token:null, gscProperty:'', ga4Property:'', userEmail:'', gscConnected:false, ga4Connected:false };
+  gscConnected = false;
+  ga4Connected = false;
+  clearSession();
+
+  // Reset demo buttons
+  document.getElementById('gscBtn').classList.remove('connected');
+  document.getElementById('ga4Btn').classList.remove('connected');
+  document.getElementById('gscStatus').textContent = 'Click to connect';
+  document.getElementById('ga4Status').textContent = 'Click to connect';
+  document.getElementById('proceedBtn').classList.remove('active');
+
+  // Reset live buttons
+  const lGsc = document.getElementById('liveGscBtn');
+  const lGa4 = document.getElementById('liveGa4Btn');
+  if (lGsc) { lGsc.classList.remove('connected'); document.getElementById('liveGscStatus').innerHTML = '<span class="sdot"></span><span>Connect</span>'; }
+  if (lGa4) { lGa4.classList.remove('connected'); document.getElementById('liveGa4Status').innerHTML = '<span class="sdot"></span><span>Connect</span>'; }
+  const lpBtn = document.getElementById('liveProceedBtn');
+  if (lpBtn) lpBtn.classList.remove('active');
+
+  // Hide dashboard, show login
+  document.getElementById('dashboardWrapper').style.display = 'none';
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('demoBadge').style.display = 'none';
+  document.getElementById('propertyName').style.display = 'none';
+}
+
+// ================================================================
+//  PROPERTY NAME DISPLAY
+// ================================================================
+function showPropertyName() {
+  const el = document.getElementById('propertyName');
+  if (liveState.gscProperty) {
+    let name = liveState.gscProperty;
+    try { name = new URL(name).hostname; } catch(e) { name = name.replace('sc-domain:', ''); }
+    el.textContent = '📍 ' + name;
+    el.style.display = 'block';
+  }
+}
+
+// ================================================================
+//  REFRESH DASHBOARD (re-fetch data)
+// ================================================================
+function refreshDashboard() {
+  if (liveState.gscToken && liveState.ga4Token) {
+    document.getElementById('syncTime').textContent = 'Refreshing...';
+    launchLive().then(() => {
+      document.getElementById('syncTime').textContent = 'Last synced: just now';
+    });
+  }
+}
+
+// ================================================================
+//  CUSTOM DATE PICKER
+// ================================================================
+function toggleDatePicker() {
+  const dd = document.getElementById('datePickerDropdown');
+  dd.classList.toggle('show');
+}
+
+function applyCustomDates() {
+  const start = document.getElementById('customStartDate').value;
+  const end = document.getElementById('customEndDate').value;
+  if (!start || !end) return;
+
+  const startD = new Date(start);
+  const endD = new Date(end);
+  const opts = { month: 'short', day: 'numeric', year: 'numeric' };
+  document.getElementById('dateRangeLabel').textContent = startD.toLocaleDateString('en-US', opts) + ' – ' + endD.toLocaleDateString('en-US', opts);
+
+  // Deselect preset pills
+  document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+
+  document.getElementById('datePickerDropdown').classList.remove('show');
+
+  // If live mode, re-fetch with custom dates
+  if (liveState.gscToken) {
+    launchLiveWithDates(start, end);
+  }
+}
+
+// Close date picker when clicking outside
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.date-range-btn-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('datePickerDropdown').classList.remove('show');
+  }
+});
 function setPreset(el, range) {
   document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
 
-  const labels = {
-    '7d': 'Feb 20 – Feb 27, 2026',
-    '14d': 'Feb 13 – Feb 27, 2026',
-    '28d': 'Jan 28 – Feb 27, 2026',
-    '3m': 'Nov 27, 2025 – Feb 27, 2026',
-    '6m': 'Aug 27, 2025 – Feb 27, 2026',
-    '12m': 'Feb 27, 2025 – Feb 27, 2026',
-    '16m': 'Oct 27, 2024 – Feb 27, 2026',
-  };
-  document.getElementById('dateRangeLabel').textContent = labels[range] || labels['28d'];
+  const now = new Date();
+  const end = now.toISOString().split('T')[0];
+  let start;
+  const daysMap = { '7d':7, '14d':14, '28d':28, '3m':90, '6m':180, '12m':365, '16m':487 };
+  const days = daysMap[range] || 28;
+  start = new Date(Date.now() - days*24*60*60*1000).toISOString().split('T')[0];
+
+  const startD = new Date(start);
+  const endD = new Date(end);
+  const opts = { month: 'short', day: 'numeric', year: 'numeric' };
+  document.getElementById('dateRangeLabel').textContent = startD.toLocaleDateString('en-US', opts) + ' – ' + endD.toLocaleDateString('en-US', opts);
+
+  // Update date picker inputs
+  document.getElementById('customStartDate').value = start;
+  document.getElementById('customEndDate').value = end;
+
+  // If live mode, re-fetch with new dates
+  if (liveState.gscToken) {
+    launchLiveWithDates(start, end);
+  }
 }
 
 function toggleCompare() {
