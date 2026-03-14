@@ -1,0 +1,2667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: #151d2e;
+  --bg-card-hover: #1a2438;
+  --bg-elevated: #1e293b;
+  --border: rgba(255,255,255,0.06);
+  --border-active: rgba(99,179,255,0.3);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+  --accent-violet: #8b5cf6;
+  --accent-orange: #f97316;
+  --gradient-primary: linear-gradient(135deg, #3b82f6, #06b6d4);
+  --gradient-success: linear-gradient(135deg, #10b981, #06b6d4);
+  --gradient-warning: linear-gradient(135deg, #f59e0b, #f97316);
+  --gradient-danger: linear-gradient(135deg, #f43f5e, #e11d48);
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.3);
+  --shadow-glow-blue: 0 0 40px rgba(59,130,246,0.15);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+
+/* Background pattern */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(6,182,212,0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============ LOGIN SCREEN ============ */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 40px 0;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+.login-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.login-container {
+  width: 480px;
+  max-width: 90vw;
+  text-align: center;
+  margin: auto;
+}
+
+.login-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px;
+  font-weight: 800;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin-bottom: 48px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-card), var(--shadow-glow-blue);
+}
+
+.login-card h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.login-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.connect-btn {
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.connect-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-active);
+  transform: translateY(-1px);
+}
+
+.connect-btn.connected {
+  border-color: rgba(16,185,129,0.4);
+  background: rgba(16,185,129,0.08);
+}
+
+.connect-btn .icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.connect-btn .icon.gsc { background: linear-gradient(135deg, rgba(66,133,244,0.2), rgba(52,168,83,0.2)); }
+.connect-btn .icon.ga4 { background: linear-gradient(135deg, rgba(251,188,4,0.2), rgba(234,67,53,0.2)); }
+
+.connect-btn .status {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.connect-btn.connected .status { color: var(--accent-emerald); }
+
+.login-proceed {
+  margin-top: 28px;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--gradient-primary);
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.4;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+.login-proceed.active { opacity: 1; pointer-events: all; }
+.login-proceed.active:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59,130,246,0.3); }
+
+.login-footer {
+  margin-top: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ============ MAIN LAYOUT ============ */
+.dashboard-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+/* Top Nav */
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,14,26,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topnav-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 800;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+}
+
+.connection-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.conn-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(16,185,129,0.1);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16,185,129,0.2);
+}
+
+.conn-pill .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Date & Controls Bar */
+.controls-bar {
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  background: rgba(17,24,39,0.5);
+}
+
+.date-range-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.date-range-btn:hover { border-color: var(--border-active); background: var(--bg-card-hover); }
+.date-range-btn svg { opacity: 0.6; }
+
+.preset-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.preset-pill {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.preset-pill:hover { color: var(--text-primary); background: var(--bg-card); }
+.preset-pill.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.compare-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.compare-toggle:hover { border-color: var(--border-active); color: var(--text-primary); }
+.compare-toggle.active {
+  background: rgba(139,92,246,0.12);
+  border-color: rgba(139,92,246,0.4);
+  color: var(--accent-violet);
+}
+
+.compare-toggle .toggle-track {
+  width: 36px; height: 20px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  position: relative;
+  transition: background 0.3s;
+}
+.compare-toggle.active .toggle-track { background: var(--accent-violet); }
+.compare-toggle .toggle-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.3s;
+}
+.compare-toggle.active .toggle-thumb { transform: translateX(16px); }
+
+.customize-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.customize-btn:hover { border-color: var(--border-active); background: var(--bg-card-hover); }
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--gradient-primary);
+  color: white;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.export-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,0.3); }
+
+/* ============ DASHBOARD GRID ============ */
+.dashboard-content {
+  padding: 24px 32px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* KPI Strip */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+.kpi-card:hover {
+  border-color: var(--border-active);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+}
+.kpi-card.blue::before { background: var(--gradient-primary); }
+.kpi-card.emerald::before { background: var(--gradient-success); }
+.kpi-card.amber::before { background: var(--gradient-warning); }
+.kpi-card.rose::before { background: var(--gradient-danger); }
+.kpi-card.violet::before { background: linear-gradient(135deg, #8b5cf6, #a855f7); }
+.kpi-card.cyan::before { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.kpi-source {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.kpi-source.gsc { background: rgba(66,133,244,0.15); color: #60a5fa; }
+.kpi-source.ga4 { background: rgba(251,188,4,0.15); color: #fbbf24; }
+
+.kpi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.kpi-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.kpi-change.up { background: rgba(16,185,129,0.12); color: var(--accent-emerald); }
+.kpi-change.down { background: rgba(244,63,94,0.12); color: var(--accent-rose); }
+
+.kpi-compare {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: none;
+}
+.compare-mode .kpi-compare { display: block; }
+.kpi-compare span {
+  color: var(--accent-violet);
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kpi-sparkline {
+  margin-top: 12px;
+  height: 32px;
+}
+
+/* Chart Sections */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: all 0.3s;
+}
+.chart-card:hover { border-color: var(--border-active); }
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.chart-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.chart-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.chart-action-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.chart-action-btn:hover, .chart-action-btn.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 280px;
+  position: relative;
+}
+
+/* SVG Chart styles */
+.chart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.chart-area { opacity: 0.15; }
+.chart-grid line { stroke: var(--border); stroke-dasharray: 4,4; }
+.chart-axis text { fill: var(--text-muted); font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+
+/* Three Column Layout */
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead th {
+  text-align: left;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tbody td {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+.data-table .mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.data-table .url-cell {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-cyan);
+  font-size: 12px;
+}
+
+.position-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 24px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+.position-badge.top3 { background: rgba(16,185,129,0.15); color: var(--accent-emerald); }
+.position-badge.top10 { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+.position-badge.top20 { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+.position-badge.below { background: rgba(244,63,94,0.1); color: var(--accent-rose); }
+
+/* Progress bars */
+.progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+
+/* Two column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Full width */
+.full-width {
+  margin-bottom: 24px;
+}
+
+/* Donut Chart */
+.donut-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 16px 0;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  padding-left: 16px;
+}
+
+/* Metric Row */
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.metric-row:last-child { border-bottom: none; }
+
+.metric-row-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.metric-row-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ============ CUSTOMIZE PANEL ============ */
+.customize-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s;
+}
+.customize-overlay.open { opacity: 1; visibility: visible; }
+
+.customize-panel {
+  position: fixed;
+  top: 0;
+  right: -480px;
+  width: 460px;
+  height: 100vh;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  z-index: 201;
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  padding: 32px;
+}
+.customize-panel.open { right: 0; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.panel-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.panel-close {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.panel-close:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+.panel-section {
+  margin-bottom: 28px;
+}
+
+.panel-section-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-item:hover { background: rgba(255,255,255,0.03); }
+
+.toggle-item-label {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-item-source {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.mini-toggle {
+  width: 36px; height: 20px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.mini-toggle.on { background: var(--accent-blue); border-color: var(--accent-blue); }
+.mini-toggle::after {
+  content: '';
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.3s;
+}
+.mini-toggle.on::after { transform: translateX(16px); }
+
+/* Comparison date picker area */
+.compare-date-section {
+  display: none;
+  background: rgba(139,92,246,0.06);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 12px 0;
+}
+.compare-mode .compare-date-section { display: block; }
+
+.compare-date-section label {
+  font-size: 12px;
+  color: var(--accent-violet);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.date-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.date-input-row input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* Section Title */
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title .badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Heatmap styles */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  gap: 3px;
+  font-size: 11px;
+}
+
+.heatmap-header {
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 8px 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.heatmap-label {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1.8;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+  cursor: default;
+}
+.heatmap-cell:hover { transform: scale(1.1); z-index: 1; }
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+.delay-1 { animation-delay: 0.05s; }
+.delay-2 { animation-delay: 0.1s; }
+.delay-3 { animation-delay: 0.15s; }
+.delay-4 { animation-delay: 0.2s; }
+.delay-5 { animation-delay: 0.25s; }
+.delay-6 { animation-delay: 0.3s; }
+
+/* Tab system for chart cards */
+.tab-row {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.tab-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--text-secondary); }
+.tab-btn.active { background: var(--bg-card); color: var(--text-primary); }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+  .three-col { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+  .controls-bar { padding: 12px 16px; }
+  .dashboard-content { padding: 16px; }
+  .topnav { padding: 0 16px; }
+}
+
+/* Core Web Vitals */
+.cwv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.cwv-item {
+  text-align: center;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+}
+
+.cwv-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 8px 0 4px;
+}
+
+.cwv-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cwv-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.cwv-status.good { color: var(--accent-emerald); }
+.cwv-status.needs { color: var(--accent-amber); }
+.cwv-status.poor { color: var(--accent-rose); }
+
+/* Insights cards */
+.insight-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  margin-bottom: 8px;
+}
+
+.insight-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.insight-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.insight-text strong { color: var(--text-primary); }
+
+/* Index Coverage */
+.index-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.index-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.index-bar-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.index-bar-track {
+  flex: 1;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--bg-primary);
+  overflow: hidden;
+  position: relative;
+}
+
+.index-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* ============ MODE TABS ============ */
+.mode-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+}
+.mode-tab {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+  position: relative;
+}
+.mode-tab:first-child { border-right: 1px solid var(--border); }
+.mode-tab:hover { color: var(--text-secondary); background: var(--bg-elevated); }
+.mode-tab.active { background: var(--bg-elevated); color: var(--text-primary); }
+.mode-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--gradient-primary);
+}
+.mode-tab .tab-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+.mode-tab .tab-sub { font-size: 10px; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+
+.mode-content { display: none; }
+.mode-content.active { display: block; }
+
+.demo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(245,158,11,0.06);
+  border: 1px solid rgba(245,158,11,0.15);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ============ LIVE OAUTH ============ */
+.oauth-btn {
+  width: 100%;
+  padding: 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
+  overflow: hidden;
+  text-align: left;
+}
+.oauth-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-active);
+  transform: translateY(-1px);
+}
+.oauth-btn.connected {
+  border-color: rgba(16,185,129,0.4);
+  background: rgba(16,185,129,0.08);
+}
+.oauth-icon-wrap {
+  width: 50px; height: 50px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+}
+.oauth-info { flex: 1; padding: 8px 14px; }
+.oauth-info .oname { font-weight: 600; font-size: 14px; }
+.oauth-info .oscope { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.oauth-info .oemail { font-size: 10px; color: var(--accent-cyan); margin-top: 2px; font-family: 'JetBrains Mono', monospace; display: none; }
+
+.oauth-status-badge {
+  padding: 0 16px;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.oauth-btn.connected .oauth-status-badge { color: var(--accent-emerald); }
+.oauth-status-badge .sdot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted);
+}
+.oauth-btn.connected .oauth-status-badge .sdot {
+  background: var(--accent-emerald);
+  animation: pulse-dot 2s infinite;
+}
+
+.oauth-divider {
+  display: flex; align-items: center; gap: 14px; margin: 20px 0;
+  color: var(--text-muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+}
+.oauth-divider::before, .oauth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.oauth-config-area { display: none; margin-bottom: 16px; }
+.oauth-config-area.show { display: block; }
+.oauth-config-area label {
+  font-size: 11px; color: var(--text-muted); font-weight: 600;
+  display: block; margin-bottom: 5px; letter-spacing: 0.5px;
+}
+.oauth-config-area input {
+  width: 100%; padding: 10px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg-primary);
+  color: var(--text-primary); font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; margin-bottom: 12px; transition: border-color 0.2s;
+}
+.oauth-config-area input:focus { outline: none; border-color: var(--accent-blue); }
+.oauth-config-area input::placeholder { color: var(--text-muted); }
+.oauth-config-area .help { font-size: 10px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; line-height: 1.5; }
+
+.config-toggle-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.config-toggle-btn:hover { border-color: var(--border-active); color: var(--text-primary); }
+
+/* Property Selector Modal */
+.prop-modal {
+  display: none;
+  position: fixed; inset: 0; z-index: 1100;
+  background: rgba(0,0,0,0.7);
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.prop-modal.show { display: flex; }
+.prop-modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 420px; max-width: 90vw;
+  box-shadow: var(--shadow-card);
+}
+.prop-modal-box h3 { font-size: 17px; margin-bottom: 5px; }
+.prop-modal-box .pdesc { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+.prop-option {
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg-elevated);
+  margin-bottom: 6px; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.prop-option:hover { border-color: var(--border-active); background: var(--bg-card-hover); }
+.prop-option.selected { border-color: rgba(59,130,246,0.5); background: rgba(59,130,246,0.08); }
+.prop-option .purl { font-size: 13px; font-weight: 500; }
+.prop-option .ptype { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.prop-confirm {
+  width: 100%; padding: 12px; border: none; border-radius: var(--radius);
+  background: var(--gradient-primary); color: white; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 12px; transition: all 0.2s;
+}
+.prop-confirm:hover { transform: translateY(-1px); }
+
+/* Demo badge */
+.demo-badge {
+  display: none;
+  align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 16px;
+  font-size: 11px; font-weight: 600;
+  background: rgba(245,158,11,0.1);
+  color: var(--accent-amber);
+  border: 1px solid rgba(245,158,11,0.2);
+}
+.demo-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-amber); animation: pulse-dot 2s infinite; }
+
+</style>
+</head>
+<body>
+
+<!-- ====== LOGIN OVERLAY ====== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-container">
+    <div class="login-logo">SEO Command Center</div>
+    <div class="login-subtitle">Analytics Dashboard</div>
+    <div class="login-card">
+      <h2>Get Started</h2>
+      <p>Explore instantly with sample data, or connect your real Google accounts for live analytics.</p>
+
+      <!-- Mode Tabs -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" onclick="switchMode('demo')">
+          <span class="tab-icon">⚡</span>Demo Mode
+          <div class="tab-sub">Instant access, sample data</div>
+        </button>
+        <button class="mode-tab" onclick="switchMode('live')">
+          <span class="tab-icon">🔗</span>Connect Live
+          <div class="tab-sub">Real GSC & GA4 via OAuth</div>
+        </button>
+      </div>
+
+      <!-- ===== DEMO MODE ===== -->
+      <div class="mode-content active" id="modeDemo">
+        <div class="demo-hint">
+          💡 Click each account below to simulate a connection. Once both show connected, launch the dashboard to explore all features with realistic sample data.
+        </div>
+
+        <button class="connect-btn" id="gscBtn" onclick="toggleConnect('gsc')">
+          <div class="icon gsc">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;">Google Search Console</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Search performance, indexing, sitemaps</div>
+          </div>
+          <span class="status" id="gscStatus">Click to connect</span>
+        </button>
+
+        <button class="connect-btn" id="ga4Btn" onclick="toggleConnect('ga4')">
+          <div class="icon ga4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 16 4-8 4 5 5-9"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;">Google Analytics 4</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Traffic, engagement, conversions</div>
+          </div>
+          <span class="status" id="ga4Status">Click to connect</span>
+        </button>
+
+        <button class="login-proceed" id="proceedBtn" onclick="enterDashboard()">
+          Launch Dashboard with Sample Data →
+        </button>
+      </div>
+
+      <!-- ===== LIVE MODE ===== -->
+      <div class="mode-content" id="modeLive">
+        <button class="oauth-btn" id="liveGscBtn" onclick="startOAuth('gsc')">
+          <div class="oauth-icon-wrap" style="background: linear-gradient(135deg, rgba(66,133,244,0.1), rgba(52,168,83,0.1));">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          </div>
+          <div class="oauth-info">
+            <div class="oname">Google Search Console</div>
+            <div class="oscope">Scopes: webmasters.readonly</div>
+            <div class="oemail" id="liveGscEmail"></div>
+          </div>
+          <div class="oauth-status-badge" id="liveGscStatus"><span class="sdot"></span><span>Connect</span></div>
+        </button>
+
+        <button class="oauth-btn" id="liveGa4Btn" onclick="startOAuth('ga4')">
+          <div class="oauth-icon-wrap" style="background: linear-gradient(135deg, rgba(251,188,4,0.1), rgba(234,67,53,0.1));">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          </div>
+          <div class="oauth-info">
+            <div class="oname">Google Analytics 4</div>
+            <div class="oscope">Scopes: analytics.readonly</div>
+            <div class="oemail" id="liveGa4Email"></div>
+          </div>
+          <div class="oauth-status-badge" id="liveGa4Status"><span class="sdot"></span><span>Connect</span></div>
+        </button>
+
+        <div class="oauth-divider">or configure manually</div>
+
+        <button class="config-toggle-btn" onclick="document.getElementById('oauthConfigArea').classList.toggle('show')">
+          ⚙ Enter OAuth Client ID & API Keys
+        </button>
+
+        <div class="oauth-config-area" id="oauthConfigArea">
+          <label>Google OAuth Client ID</label>
+          <input type="text" id="clientIdInput" placeholder="xxxxx.apps.googleusercontent.com" />
+          <div class="help">Create at console.cloud.google.com → APIs & Services → Credentials. Enable Search Console API & Analytics Data API.</div>
+
+          <label>GSC Property URL</label>
+          <input type="text" id="gscPropertyInput" placeholder="https://yourdomain.com or sc-domain:yourdomain.com" />
+
+          <label>GA4 Property ID</label>
+          <input type="text" id="ga4PropertyInput" placeholder="properties/123456789" />
+          <div class="help">Find in GA4 → Admin → Property Settings → Property ID</div>
+        </div>
+
+        <button class="login-proceed" id="liveProceedBtn" onclick="launchLive()">
+          Launch Dashboard with Live Data →
+        </button>
+      </div>
+    </div>
+    <div class="login-footer">OAuth 2.0 authentication · Tokens stay in your browser · Zero server storage</div>
+  </div>
+</div>
+
+<!-- Property Selector Modal -->
+<div class="prop-modal" id="propModal">
+  <div class="prop-modal-box">
+    <h3 id="propModalTitle">Select Property</h3>
+    <p class="pdesc" id="propModalDesc">Choose which property to connect.</p>
+    <div id="propModalList"></div>
+    <button class="prop-confirm" onclick="confirmProperty()">Confirm Selection</button>
+  </div>
+</div>
+
+<!-- ====== DASHBOARD ====== -->
+<div class="dashboard-wrapper" id="dashboardWrapper" style="display:none;">
+
+  <!-- Top Navigation -->
+  <nav class="topnav">
+    <div class="topnav-left">
+      <div class="nav-logo">SEO Command Center</div>
+      <div class="nav-divider"></div>
+      <div class="connection-pills" id="connectionPills">
+        <div class="conn-pill"><span class="dot"></span> GSC Connected</div>
+        <div class="conn-pill"><span class="dot"></span> GA4 Connected</div>
+      </div>
+      <div class="demo-badge" id="demoBadge"><span class="dot"></span> Demo Mode</div>
+    </div>
+    <div class="topnav-right">
+      <span style="font-size:12px;color:var(--text-muted);">Last synced: 2 min ago</span>
+      <button style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        ↻ Refresh
+      </button>
+    </div>
+  </nav>
+
+  <!-- Controls Bar -->
+  <div class="controls-bar">
+    <button class="date-range-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="dateRangeLabel">Jan 28 – Feb 27, 2026</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+
+    <div class="preset-pills">
+      <button class="preset-pill" onclick="setPreset(this, '7d')">7D</button>
+      <button class="preset-pill" onclick="setPreset(this, '14d')">14D</button>
+      <button class="preset-pill active" onclick="setPreset(this, '28d')">28D</button>
+      <button class="preset-pill" onclick="setPreset(this, '3m')">3M</button>
+      <button class="preset-pill" onclick="setPreset(this, '6m')">6M</button>
+      <button class="preset-pill" onclick="setPreset(this, '12m')">12M</button>
+      <button class="preset-pill" onclick="setPreset(this, '16m')">16M</button>
+    </div>
+
+    <button class="compare-toggle" id="compareToggle" onclick="toggleCompare()">
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      Compare
+    </button>
+
+    <div class="compare-date-section">
+      <label>Compare Period</label>
+      <div class="date-input-row">
+        <input type="date" value="2025-12-31" />
+        <input type="date" value="2026-01-28" />
+      </div>
+    </div>
+
+    <button class="customize-btn" onclick="openCustomize()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      Customize
+    </button>
+
+    <button class="export-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export Report
+    </button>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div class="dashboard-content" id="dashboardContent">
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip">
+      <div class="kpi-card blue animate-in delay-1">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Clicks</span>
+          <span class="kpi-source gsc">GSC</span>
+        </div>
+        <div class="kpi-value">284,921</div>
+        <span class="kpi-change up">↑ 12.4%</span>
+        <div class="kpi-compare">vs prev: <span>253,490</span></div>
+        <div class="kpi-sparkline">
+          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
+            <polyline points="0,28 15,24 30,26 45,20 60,22 75,16 90,18 105,14 120,12 135,16 150,8 165,10 180,6 200,4" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card emerald animate-in delay-2">
+        <div class="kpi-header">
+          <span class="kpi-label">Impressions</span>
+          <span class="kpi-source gsc">GSC</span>
+        </div>
+        <div class="kpi-value">8.42M</div>
+        <span class="kpi-change up">↑ 8.7%</span>
+        <div class="kpi-compare">vs prev: <span>7.75M</span></div>
+        <div class="kpi-sparkline">
+          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
+            <polyline points="0,24 15,22 30,20 45,22 60,18 75,20 90,14 105,16 120,10 135,12 150,8 165,6 180,10 200,4" fill="none" stroke="#10b981" stroke-width="2" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card amber animate-in delay-3">
+        <div class="kpi-header">
+          <span class="kpi-label">Avg CTR</span>
+          <span class="kpi-source gsc">GSC</span>
+        </div>
+        <div class="kpi-value">3.38%</div>
+        <span class="kpi-change up">↑ 0.3pp</span>
+        <div class="kpi-compare">vs prev: <span>3.08%</span></div>
+        <div class="kpi-sparkline">
+          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
+            <polyline points="0,20 15,22 30,18 45,16 60,20 75,14 90,16 105,12 120,14 135,10 150,12 165,8 180,10 200,6" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card rose animate-in delay-4">
+        <div class="kpi-header">
+          <span class="kpi-label">Avg Position</span>
+          <span class="kpi-source gsc">GSC</span>
+        </div>
+        <div class="kpi-value">14.2</div>
+        <span class="kpi-change up">↑ 1.8</span>
+        <div class="kpi-compare">vs prev: <span>16.0</span></div>
+        <div class="kpi-sparkline">
+          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
+            <polyline points="0,8 15,10 30,12 45,10 60,14 75,12 90,16 105,14 120,18 135,20 150,22 165,24 180,26 200,28" fill="none" stroke="#f43f5e" stroke-width="2" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card violet animate-in delay-5">
+        <div class="kpi-header">
+          <span class="kpi-label">Organic Sessions</span>
+          <span class="kpi-source ga4">GA4</span>
+        </div>
+        <div class="kpi-value">196,345</div>
+        <span class="kpi-change up">↑ 15.2%</span>
+        <div class="kpi-compare">vs prev: <span>170,439</span></div>
+        <div class="kpi-sparkline">
+          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
+            <polyline points="0,26 15,24 30,22 45,24 60,18 75,20 90,16 105,14 120,12 135,10 150,12 165,8 180,6 200,4" fill="none" stroke="#8b5cf6" stroke-width="2" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card cyan animate-in delay-6">
+        <div class="kpi-header">
+          <span class="kpi-label">Organic Conv.</span>
+          <span class="kpi-source ga4">GA4</span>
+        </div>
+        <div class="kpi-value">4,217</div>
+        <span class="kpi-change up">↑ 22.1%</span>
+        <div class="kpi-compare">vs prev: <span>3,454</span></div>
+        <div class="kpi-sparkline">
+          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
+            <polyline points="0,28 15,26 30,24 45,22 60,20 75,18 90,20 105,16 120,12 135,14 150,10 165,8 180,6 200,4" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second KPI Row -->
+    <div class="kpi-strip" style="grid-template-columns: repeat(5, 1fr);">
+      <div class="kpi-card blue animate-in delay-1" style="--border-top-color:#3b82f6">
+        <div class="kpi-header">
+          <span class="kpi-label">Bounce Rate</span>
+          <span class="kpi-source ga4">GA4</span>
+        </div>
+        <div class="kpi-value">38.4%</div>
+        <span class="kpi-change up">↓ 3.2pp</span>
+      </div>
+      <div class="kpi-card emerald animate-in delay-2">
+        <div class="kpi-header">
+          <span class="kpi-label">Avg Session Duration</span>
+          <span class="kpi-source ga4">GA4</span>
+        </div>
+        <div class="kpi-value">3m 24s</div>
+        <span class="kpi-change up">↑ 18s</span>
+      </div>
+      <div class="kpi-card amber animate-in delay-3">
+        <div class="kpi-header">
+          <span class="kpi-label">Pages / Session</span>
+          <span class="kpi-source ga4">GA4</span>
+        </div>
+        <div class="kpi-value">2.87</div>
+        <span class="kpi-change up">↑ 0.21</span>
+      </div>
+      <div class="kpi-card violet animate-in delay-4">
+        <div class="kpi-header">
+          <span class="kpi-label">Organic Revenue</span>
+          <span class="kpi-source ga4">GA4</span>
+        </div>
+        <div class="kpi-value">$127.4K</div>
+        <span class="kpi-change up">↑ 19.3%</span>
+      </div>
+      <div class="kpi-card cyan animate-in delay-5">
+        <div class="kpi-header">
+          <span class="kpi-label">Conv. Rate</span>
+          <span class="kpi-source ga4">GA4</span>
+        </div>
+        <div class="kpi-value">2.15%</div>
+        <span class="kpi-change up">↑ 0.14pp</span>
+      </div>
+    </div>
+
+    <!-- Main Charts Row -->
+    <div class="charts-grid animate-in" style="animation-delay:0.35s;">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Search Performance Trend</div>
+            <div class="chart-subtitle">Clicks & Impressions over time · GSC</div>
+          </div>
+          <div class="chart-actions">
+            <button class="chart-action-btn active">Daily</button>
+            <button class="chart-action-btn">Weekly</button>
+            <button class="chart-action-btn">Monthly</button>
+          </div>
+        </div>
+        <div class="chart-canvas">
+          <svg width="100%" height="100%" viewBox="0 0 700 260" preserveAspectRatio="none">
+            <!-- Grid -->
+            <line x1="40" y1="20" x2="40" y2="230" stroke="var(--border)" stroke-width="1"/>
+            <line x1="40" y1="230" x2="690" y2="230" stroke="var(--border)" stroke-width="1"/>
+            <line x1="40" y1="72" x2="690" y2="72" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>
+            <line x1="40" y1="125" x2="690" y2="125" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>
+            <line x1="40" y1="178" x2="690" y2="178" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>
+            <!-- Impressions Area -->
+            <path d="M40,180 Q110,160 180,140 T320,100 T460,80 T600,50 T690,40 L690,230 L40,230 Z" fill="url(#grad-impressions)" opacity="0.2"/>
+            <!-- Clicks Area -->
+            <path d="M40,210 Q110,200 180,190 T320,170 T460,155 T600,130 T690,120 L690,230 L40,230 Z" fill="url(#grad-clicks)" opacity="0.2"/>
+            <!-- Impressions Line -->
+            <path d="M40,180 Q110,160 180,140 T320,100 T460,80 T600,50 T690,40" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Clicks Line -->
+            <path d="M40,210 Q110,200 180,190 T320,170 T460,155 T600,130 T690,120" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Labels -->
+            <text x="50" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">Jan 28</text>
+            <text x="200" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">Feb 4</text>
+            <text x="370" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">Feb 11</text>
+            <text x="530" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">Feb 18</text>
+            <text x="660" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">Feb 27</text>
+            <defs>
+              <linearGradient id="grad-impressions" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10b981"/>
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="grad-clicks" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3b82f6"/>
+                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <!-- Legend -->
+          <div style="position:absolute;top:8px;right:8px;display:flex;gap:16px;font-size:12px;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:3px;background:#3b82f6;border-radius:2px;display:block;"></span><span style="color:var(--text-secondary);">Clicks</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:3px;background:#10b981;border-radius:2px;display:block;"></span><span style="color:var(--text-secondary);">Impressions</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Traffic Sources</div>
+            <div class="chart-subtitle">Channel breakdown · GA4</div>
+          </div>
+        </div>
+        <div class="donut-container">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="60" fill="none" stroke="var(--bg-primary)" stroke-width="24"/>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#3b82f6" stroke-width="24" stroke-dasharray="188.4 188.4" stroke-dashoffset="0" transform="rotate(-90 80 80)" style="transition: stroke-dashoffset 1.5s ease;">
+              <animate attributeName="stroke-dashoffset" from="376.8" to="0" dur="1s" fill="freeze"/>
+            </circle>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#10b981" stroke-width="24" stroke-dasharray="75.4 301.4" stroke-dashoffset="-188.4" transform="rotate(-90 80 80)"/>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#f59e0b" stroke-width="24" stroke-dasharray="45.2 331.6" stroke-dashoffset="-263.8" transform="rotate(-90 80 80)"/>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#8b5cf6" stroke-width="24" stroke-dasharray="30.2 346.6" stroke-dashoffset="-309" transform="rotate(-90 80 80)"/>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#64748b" stroke-width="24" stroke-dasharray="37.6 339.2" stroke-dashoffset="-339.2" transform="rotate(-90 80 80)"/>
+            <text x="80" y="76" text-anchor="middle" fill="var(--text-primary)" font-family="JetBrains Mono" font-size="20" font-weight="700">52%</text>
+            <text x="80" y="94" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-family="DM Sans">Organic</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#3b82f6;"></span> Organic Search <span class="legend-value">52%</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Direct <span class="legend-value">20%</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Referral <span class="legend-value">12%</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span> Social <span class="legend-value">8%</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:#64748b;"></span> Others <span class="legend-value">8%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Three Column: Top Queries, Top Pages, Top Countries -->
+    <div class="three-col animate-in" style="animation-delay:0.45s;">
+
+      <!-- Top Queries -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Top Queries</div>
+            <div class="chart-subtitle">By clicks · GSC</div>
+          </div>
+          <div class="tab-row">
+            <button class="tab-btn active">Clicks</button>
+            <button class="tab-btn">Impressions</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Query</th><th>Clicks</th><th>Pos</th></tr></thead>
+          <tbody>
+            <tr><td class="url-cell">best seo tools 2026</td><td class="mono">8,421</td><td><span class="position-badge top3">2.1</span></td></tr>
+            <tr><td class="url-cell">keyword research guide</td><td class="mono">6,892</td><td><span class="position-badge top3">1.4</span></td></tr>
+            <tr><td class="url-cell">on page seo checklist</td><td class="mono">5,234</td><td><span class="position-badge top10">4.7</span></td></tr>
+            <tr><td class="url-cell">technical seo audit</td><td class="mono">4,107</td><td><span class="position-badge top10">6.2</span></td></tr>
+            <tr><td class="url-cell">link building strategies</td><td class="mono">3,891</td><td><span class="position-badge top10">5.8</span></td></tr>
+            <tr><td class="url-cell">content optimization tips</td><td class="mono">3,456</td><td><span class="position-badge top20">11.3</span></td></tr>
+            <tr><td class="url-cell">serp analysis tool</td><td class="mono">2,987</td><td><span class="position-badge top10">7.9</span></td></tr>
+            <tr><td class="url-cell">site speed optimization</td><td class="mono">2,654</td><td><span class="position-badge top20">14.6</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Top Landing Pages -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Top Landing Pages</div>
+            <div class="chart-subtitle">Organic sessions · GA4 + GSC</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Page</th><th>Sessions</th><th>Conv</th></tr></thead>
+          <tbody>
+            <tr><td class="url-cell">/blog/seo-tools-guide</td><td class="mono">14,892</td><td class="mono" style="color:var(--accent-emerald);">342</td></tr>
+            <tr><td class="url-cell">/resources/keyword-research</td><td class="mono">11,234</td><td class="mono" style="color:var(--accent-emerald);">287</td></tr>
+            <tr><td class="url-cell">/blog/on-page-seo</td><td class="mono">9,876</td><td class="mono" style="color:var(--accent-emerald);">198</td></tr>
+            <tr><td class="url-cell">/tools/audit-checker</td><td class="mono">8,432</td><td class="mono" style="color:var(--accent-emerald);">456</td></tr>
+            <tr><td class="url-cell">/blog/link-building</td><td class="mono">7,654</td><td class="mono" style="color:var(--accent-emerald);">134</td></tr>
+            <tr><td class="url-cell">/pricing</td><td class="mono">6,789</td><td class="mono" style="color:var(--accent-emerald);">523</td></tr>
+            <tr><td class="url-cell">/blog/technical-seo</td><td class="mono">5,432</td><td class="mono" style="color:var(--accent-emerald);">89</td></tr>
+            <tr><td class="url-cell">/features</td><td class="mono">4,987</td><td class="mono" style="color:var(--accent-emerald);">367</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Top Countries -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Top Countries</div>
+            <div class="chart-subtitle">By organic traffic · GSC + GA4</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Country</th><th>Clicks</th><th>Share</th></tr></thead>
+          <tbody>
+            <tr><td>🇺🇸 United States</td><td class="mono">98,234</td><td class="mono">34.5%</td></tr>
+            <tr><td>🇬🇧 United Kingdom</td><td class="mono">38,921</td><td class="mono">13.7%</td></tr>
+            <tr><td>🇮🇳 India</td><td class="mono">31,456</td><td class="mono">11.0%</td></tr>
+            <tr><td>🇩🇪 Germany</td><td class="mono">22,789</td><td class="mono">8.0%</td></tr>
+            <tr><td>🇨🇦 Canada</td><td class="mono">18,432</td><td class="mono">6.5%</td></tr>
+            <tr><td>🇦🇺 Australia</td><td class="mono">14,567</td><td class="mono">5.1%</td></tr>
+            <tr><td>🇫🇷 France</td><td class="mono">11,234</td><td class="mono">3.9%</td></tr>
+            <tr><td>🇧🇷 Brazil</td><td class="mono">8,765</td><td class="mono">3.1%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Organic Sessions & Engagement Trend + Device Breakdown -->
+    <div class="charts-grid animate-in" style="animation-delay:0.55s;">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Organic Engagement Metrics</div>
+            <div class="chart-subtitle">Sessions, Engaged Sessions & Bounce Rate · GA4</div>
+          </div>
+          <div class="chart-actions">
+            <button class="chart-action-btn active">Sessions</button>
+            <button class="chart-action-btn">Engagement</button>
+            <button class="chart-action-btn">Bounce</button>
+          </div>
+        </div>
+        <div class="chart-canvas">
+          <svg width="100%" height="100%" viewBox="0 0 700 260" preserveAspectRatio="none">
+            <line x1="40" y1="230" x2="690" y2="230" stroke="var(--border)" stroke-width="1"/>
+            <line x1="40" y1="72" x2="690" y2="72" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>
+            <line x1="40" y1="150" x2="690" y2="150" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>
+            <!-- Bar chart for sessions -->
+            <g opacity="0.6">
+              <rect x="50" y="140" width="28" height="90" rx="4" fill="#8b5cf6"/>
+              <rect x="95" y="130" width="28" height="100" rx="4" fill="#8b5cf6"/>
+              <rect x="140" y="120" width="28" height="110" rx="4" fill="#8b5cf6"/>
+              <rect x="185" y="110" width="28" height="120" rx="4" fill="#8b5cf6"/>
+              <rect x="230" y="100" width="28" height="130" rx="4" fill="#8b5cf6"/>
+              <rect x="275" y="105" width="28" height="125" rx="4" fill="#8b5cf6"/>
+              <rect x="320" y="90" width="28" height="140" rx="4" fill="#8b5cf6"/>
+              <rect x="365" y="85" width="28" height="145" rx="4" fill="#8b5cf6"/>
+              <rect x="410" y="80" width="28" height="150" rx="4" fill="#8b5cf6"/>
+              <rect x="455" y="75" width="28" height="155" rx="4" fill="#8b5cf6"/>
+              <rect x="500" y="70" width="28" height="160" rx="4" fill="#8b5cf6"/>
+              <rect x="545" y="60" width="28" height="170" rx="4" fill="#8b5cf6"/>
+              <rect x="590" y="55" width="28" height="175" rx="4" fill="#8b5cf6"/>
+              <rect x="635" y="45" width="28" height="185" rx="4" fill="#8b5cf6"/>
+            </g>
+            <!-- Engagement rate line -->
+            <path d="M64,100 Q155,90 230,85 T410,70 T590,55 T649,50" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5,3"/>
+            <!-- Labels -->
+            <text x="55" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">W1</text>
+            <text x="190" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">W2</text>
+            <text x="370" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">W3</text>
+            <text x="550" y="248" fill="var(--text-muted)" font-size="10" font-family="JetBrains Mono">W4</text>
+          </svg>
+          <div style="position:absolute;top:8px;right:8px;display:flex;gap:16px;font-size:12px;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:8px;background:#8b5cf6;border-radius:2px;display:block;opacity:0.6;"></span><span style="color:var(--text-secondary);">Sessions</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:3px;background:#06b6d4;border-radius:2px;display:block;border-top:1px dashed #06b6d4;"></span><span style="color:var(--text-secondary);">Engagement Rate</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Device Breakdown -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Device Breakdown</div>
+            <div class="chart-subtitle">Organic traffic by device · GSC + GA4</div>
+          </div>
+        </div>
+        <div style="padding: 16px 0;">
+          <div class="metric-row">
+            <div>
+              <div class="metric-row-label">📱 Mobile</div>
+              <div class="progress-bar" style="width:200px;margin-top:6px;">
+                <div class="progress-fill" style="width:62%;background:var(--gradient-primary);"></div>
+              </div>
+            </div>
+            <div class="metric-row-value">62.4%</div>
+          </div>
+          <div class="metric-row">
+            <div>
+              <div class="metric-row-label">🖥 Desktop</div>
+              <div class="progress-bar" style="width:200px;margin-top:6px;">
+                <div class="progress-fill" style="width:31%;background:var(--gradient-success);"></div>
+              </div>
+            </div>
+            <div class="metric-row-value">31.2%</div>
+          </div>
+          <div class="metric-row">
+            <div>
+              <div class="metric-row-label">📟 Tablet</div>
+              <div class="progress-bar" style="width:200px;margin-top:6px;">
+                <div class="progress-fill" style="width:6%;background:var(--gradient-warning);"></div>
+              </div>
+            </div>
+            <div class="metric-row-value">6.4%</div>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:16px;">
+          <div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Mobile vs Desktop CTR</div>
+          <div class="metric-row">
+            <span class="metric-row-label">Mobile CTR</span>
+            <span class="metric-row-value" style="color:var(--accent-blue);">3.12%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Desktop CTR</span>
+            <span class="metric-row-value" style="color:var(--accent-emerald);">4.21%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Mobile Avg Pos</span>
+            <span class="metric-row-value" style="color:var(--accent-amber);">15.4</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Desktop Avg Pos</span>
+            <span class="metric-row-value" style="color:var(--accent-violet);">12.1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Web Vitals + Index Coverage + SEO Insights -->
+    <div class="three-col animate-in" style="animation-delay:0.6s;">
+
+      <!-- Core Web Vitals -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Core Web Vitals</div>
+            <div class="chart-subtitle">Page experience signals · GSC</div>
+          </div>
+        </div>
+        <div class="cwv-grid">
+          <div class="cwv-item">
+            <div class="cwv-label">LCP</div>
+            <div class="cwv-score" style="color:var(--accent-emerald);">1.8s</div>
+            <div class="cwv-status good">Good</div>
+          </div>
+          <div class="cwv-item">
+            <div class="cwv-label">INP</div>
+            <div class="cwv-score" style="color:var(--accent-amber);">198ms</div>
+            <div class="cwv-status needs">Needs Work</div>
+          </div>
+          <div class="cwv-item">
+            <div class="cwv-label">CLS</div>
+            <div class="cwv-score" style="color:var(--accent-emerald);">0.04</div>
+            <div class="cwv-status good">Good</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div class="metric-row">
+            <span class="metric-row-label">FCP</span>
+            <span class="metric-row-value" style="color:var(--accent-emerald);">1.2s</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">TTFB</span>
+            <span class="metric-row-value" style="color:var(--accent-amber);">0.6s</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Good URLs</span>
+            <span class="metric-row-value" style="color:var(--accent-emerald);">78%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Needs Improvement</span>
+            <span class="metric-row-value" style="color:var(--accent-amber);">18%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Poor URLs</span>
+            <span class="metric-row-value" style="color:var(--accent-rose);">4%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Index Coverage -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Index Coverage</div>
+            <div class="chart-subtitle">Page indexing status · GSC</div>
+          </div>
+        </div>
+        <div class="index-bar-chart">
+          <div class="index-bar-row">
+            <span class="index-bar-label">Indexed</span>
+            <div class="index-bar-track">
+              <div class="index-bar-fill" style="width:72%;background:var(--accent-emerald);">4,821</div>
+            </div>
+          </div>
+          <div class="index-bar-row">
+            <span class="index-bar-label">Crawled</span>
+            <div class="index-bar-track">
+              <div class="index-bar-fill" style="width:14%;background:var(--accent-blue);">932</div>
+            </div>
+          </div>
+          <div class="index-bar-row">
+            <span class="index-bar-label">Excluded</span>
+            <div class="index-bar-track">
+              <div class="index-bar-fill" style="width:10%;background:var(--accent-amber);">687</div>
+            </div>
+          </div>
+          <div class="index-bar-row">
+            <span class="index-bar-label">Errors</span>
+            <div class="index-bar-track">
+              <div class="index-bar-fill" style="width:4%;background:var(--accent-rose);">243</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Sitemap Status</div>
+          <div class="metric-row">
+            <span class="metric-row-label">Submitted</span>
+            <span class="metric-row-value">6,683</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Indexed</span>
+            <span class="metric-row-value" style="color:var(--accent-emerald);">4,821</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Coverage Ratio</span>
+            <span class="metric-row-value" style="color:var(--accent-blue);">72.1%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Insights -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">SEO Insights</div>
+            <div class="chart-subtitle">Key findings & opportunities</div>
+          </div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon" style="background:rgba(16,185,129,0.12);">🚀</div>
+          <div class="insight-text"><strong>+34% clicks</strong> on "/blog/seo-tools-guide" after featured snippet win for "best seo tools 2026"</div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon" style="background:rgba(245,158,11,0.12);">⚠️</div>
+          <div class="insight-text"><strong>INP regression</strong> detected on mobile — 198ms avg. Consider lazy loading below-fold JS.</div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon" style="background:rgba(59,130,246,0.12);">📈</div>
+          <div class="insight-text"><strong>12 new keywords</strong> entered top-10 positions this week. Content cluster strategy is working.</div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon" style="background:rgba(244,63,94,0.12);">🔴</div>
+          <div class="insight-text"><strong>243 index errors</strong> — mostly 404s from deleted blog posts. Implement redirects.</div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon" style="background:rgba(139,92,246,0.12);">💡</div>
+          <div class="insight-text"><strong>Opportunity:</strong> 847 queries with impressions &gt; 1K but position 8-20. Target for content optimization.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keyword Position Distribution & New/Lost Keywords -->
+    <div class="two-col animate-in" style="animation-delay:0.65s;">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Keyword Position Distribution</div>
+            <div class="chart-subtitle">Ranked keywords by position range · GSC</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 0;">
+          <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-emerald);">342</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Top 3</div>
+            <div style="font-size:11px;color:var(--accent-emerald);margin-top:2px;">+18</div>
+          </div>
+          <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-blue);">1,247</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Top 10</div>
+            <div style="font-size:11px;color:var(--accent-emerald);margin-top:2px;">+42</div>
+          </div>
+          <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.15);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-amber);">2,891</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Top 20</div>
+            <div style="font-size:11px;color:var(--accent-emerald);margin-top:2px;">+67</div>
+          </div>
+          <div style="text-align:center;padding:20px 8px;border-radius:var(--radius-sm);background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.15);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--accent-rose);">5,432</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">20+</div>
+            <div style="font-size:11px;color:var(--accent-rose);margin-top:2px;">-23</div>
+          </div>
+        </div>
+        <div style="padding-top:16px;border-top:1px solid var(--border);">
+          <div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Position Movement (28d)</div>
+          <div class="metric-row">
+            <span class="metric-row-label" style="color:var(--accent-emerald);">⬆ Improved</span>
+            <span class="metric-row-value">1,234 keywords</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label" style="color:var(--text-muted);">→ Stable</span>
+            <span class="metric-row-value">3,891 keywords</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label" style="color:var(--accent-rose);">⬇ Declined</span>
+            <span class="metric-row-value">787 keywords</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Appearance -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Search Appearance & SERP Features</div>
+            <div class="chart-subtitle">Rich result performance · GSC</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Feature</th><th>Impressions</th><th>Clicks</th><th>CTR</th></tr></thead>
+          <tbody>
+            <tr><td>⭐ Rich Results</td><td class="mono">1.2M</td><td class="mono">48.2K</td><td class="mono" style="color:var(--accent-emerald);">4.02%</td></tr>
+            <tr><td>📋 FAQ Schema</td><td class="mono">890K</td><td class="mono">31.4K</td><td class="mono" style="color:var(--accent-emerald);">3.53%</td></tr>
+            <tr><td>📸 Image Pack</td><td class="mono">654K</td><td class="mono">12.8K</td><td class="mono" style="color:var(--accent-amber);">1.96%</td></tr>
+            <tr><td>🎬 Video Results</td><td class="mono">432K</td><td class="mono">21.3K</td><td class="mono" style="color:var(--accent-emerald);">4.93%</td></tr>
+            <tr><td>📍 Featured Snippet</td><td class="mono">234K</td><td class="mono">18.7K</td><td class="mono" style="color:var(--accent-emerald);">7.99%</td></tr>
+            <tr><td>🔗 Sitelinks</td><td class="mono">178K</td><td class="mono">24.1K</td><td class="mono" style="color:var(--accent-emerald);">13.5%</td></tr>
+          </tbody>
+        </table>
+        <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:12px;">
+          <div class="metric-row">
+            <span class="metric-row-label">Total Rich Impressions</span>
+            <span class="metric-row-value" style="color:var(--accent-blue);">3.59M</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Rich Result CTR Avg</span>
+            <span class="metric-row-value" style="color:var(--accent-emerald);">4.37%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Click Heatmap by Day/Hour -->
+    <div class="full-width animate-in" style="animation-delay:0.7s;">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Click Activity Heatmap</div>
+            <div class="chart-subtitle">Clicks distribution by day and hour · GSC</div>
+          </div>
+        </div>
+        <div class="heatmap-grid" id="heatmapGrid">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- New vs Returning Users + Content Performance -->
+    <div class="two-col animate-in" style="animation-delay:0.75s;">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">User Segments</div>
+            <div class="chart-subtitle">New vs Returning organic users · GA4</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;padding:16px 0;">
+          <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);">
+            <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">New Users</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-blue);margin:8px 0;">124,892</div>
+            <span class="kpi-change up">↑ 18.4%</span>
+          </div>
+          <div style="flex:1;text-align:center;padding:24px;border-radius:var(--radius-sm);background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.12);">
+            <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;">Returning</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--accent-violet);margin:8px 0;">71,453</div>
+            <span class="kpi-change up">↑ 11.2%</span>
+          </div>
+        </div>
+        <div style="padding-top:16px;border-top:1px solid var(--border);">
+          <div class="chart-subtitle" style="margin-bottom:12px;font-weight:600;color:var(--text-secondary);">Engagement by User Type</div>
+          <div class="metric-row">
+            <span class="metric-row-label">New User Bounce Rate</span>
+            <span class="metric-row-value">42.1%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Returning Bounce Rate</span>
+            <span class="metric-row-value" style="color:var(--accent-emerald);">28.3%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">New User Avg Duration</span>
+            <span class="metric-row-value">2m 48s</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-row-label">Returning Avg Duration</span>
+            <span class="metric-row-value" style="color:var(--accent-emerald);">4m 12s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conversion Funnel -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Organic Conversion Funnel</div>
+            <div class="chart-subtitle">From impression to conversion · GA4 + GSC</div>
+          </div>
+        </div>
+        <div style="padding:16px 0;">
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:13px;">Impressions</span>
+              <span class="mono" style="font-size:13px;">8,420,000</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--gradient-primary);"></div></div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:13px;">Clicks</span>
+              <span class="mono" style="font-size:13px;">284,921</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:34%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);"></div></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">3.38% click-through rate</div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:13px;">Engaged Sessions</span>
+              <span class="mono" style="font-size:13px;">196,345</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:23%;background:linear-gradient(135deg,#8b5cf6,#06b6d4);"></div></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">68.9% engagement rate</div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:13px;">Goal Completions</span>
+              <span class="mono" style="font-size:13px;">18,432</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:8%;background:linear-gradient(135deg,#06b6d4,#10b981);"></div></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">9.4% of engaged sessions</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:13px;">Conversions</span>
+              <span class="mono" style="font-size:13px;color:var(--accent-emerald);">4,217</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:3%;background:var(--accent-emerald);"></div></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">2.15% conversion rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ====== CUSTOMIZE PANEL ====== -->
+<div class="customize-overlay" id="customizeOverlay" onclick="closeCustomize()"></div>
+<div class="customize-panel" id="customizePanel">
+  <div class="panel-header">
+    <h2>Customize Dashboard</h2>
+    <button class="panel-close" onclick="closeCustomize()">✕</button>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">GSC Data Points</div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Total Clicks <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Impressions <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Average CTR <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Average Position <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Top Queries <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Core Web Vitals <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Index Coverage <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Search Appearance <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Click Heatmap <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Position Distribution <span class="toggle-item-source" style="background:rgba(66,133,244,0.15);color:#60a5fa;">GSC</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">GA4 Data Points</div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Organic Sessions <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Organic Conversions <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Bounce Rate <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Session Duration <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Pages Per Session <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Organic Revenue <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Conversion Rate <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Traffic Sources <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">User Segments <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Conversion Funnel <span class="toggle-item-source" style="background:rgba(251,188,4,0.15);color:#fbbf24;">GA4</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-section-title">Combined Views</div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Top Landing Pages <span class="toggle-item-source" style="background:rgba(16,185,129,0.15);color:#34d399;">BOTH</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Country Breakdown <span class="toggle-item-source" style="background:rgba(16,185,129,0.15);color:#34d399;">BOTH</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">Device Split <span class="toggle-item-source" style="background:rgba(16,185,129,0.15);color:#34d399;">BOTH</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+    <div class="toggle-item" onclick="toggleMetric(this)">
+      <span class="toggle-item-label">SEO Insights <span class="toggle-item-source" style="background:rgba(16,185,129,0.15);color:#34d399;">BOTH</span></span>
+      <div class="mini-toggle on"></div>
+    </div>
+  </div>
+
+  <button onclick="closeCustomize()" style="width:100%;padding:14px;border:none;border-radius:var(--radius);background:var(--gradient-primary);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:12px;">
+    Apply Changes
+  </button>
+</div>
+
+<script>
+// ================================================================
+//  MODE SWITCHING
+// ================================================================
+function switchMode(mode) {
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mode-content').forEach(c => c.classList.remove('active'));
+  if (mode === 'demo') {
+    document.querySelector('.mode-tab:first-child').classList.add('active');
+    document.getElementById('modeDemo').classList.add('active');
+  } else {
+    document.querySelector('.mode-tab:last-child').classList.add('active');
+    document.getElementById('modeLive').classList.add('active');
+  }
+}
+
+// ================================================================
+//  DEMO MODE — Click to connect (original v1 behavior)
+// ================================================================
+let gscConnected = false;
+let ga4Connected = false;
+
+function toggleConnect(type) {
+  if (type === 'gsc') {
+    gscConnected = !gscConnected;
+    const btn = document.getElementById('gscBtn');
+    const status = document.getElementById('gscStatus');
+    btn.classList.toggle('connected', gscConnected);
+    status.textContent = gscConnected ? '✓ Connected' : 'Click to connect';
+  } else {
+    ga4Connected = !ga4Connected;
+    const btn = document.getElementById('ga4Btn');
+    const status = document.getElementById('ga4Status');
+    btn.classList.toggle('connected', ga4Connected);
+    status.textContent = ga4Connected ? '✓ Connected' : 'Click to connect';
+  }
+  const proceed = document.getElementById('proceedBtn');
+  proceed.classList.toggle('active', gscConnected && ga4Connected);
+}
+
+function enterDashboard() {
+  if (!gscConnected || !ga4Connected) return;
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('dashboardWrapper').style.display = 'block';
+  document.getElementById('demoBadge').style.display = 'flex';
+  generateHeatmap();
+}
+
+// ================================================================
+//  LIVE OAUTH — Real Google API integration
+// ================================================================
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_SCOPES = {
+  gsc: 'https://www.googleapis.com/auth/webmasters.readonly',
+  ga4: 'https://www.googleapis.com/auth/analytics.readonly'
+};
+
+let liveState = {
+  clientId: '',
+  gscToken: null,
+  ga4Token: null,
+  gscProperty: '',
+  ga4Property: '',
+  userEmail: '',
+  gscConnected: false,
+  ga4Connected: false
+};
+
+function startOAuth(service) {
+  const clientId = document.getElementById('clientIdInput').value.trim();
+  if (!clientId) {
+    document.getElementById('oauthConfigArea').classList.add('show');
+    document.getElementById('clientIdInput').focus();
+    document.getElementById('clientIdInput').style.borderColor = 'var(--accent-rose)';
+    setTimeout(() => document.getElementById('clientIdInput').style.borderColor = '', 2000);
+    return;
+  }
+  liveState.clientId = clientId;
+
+  const redirectUri = window.location.origin + window.location.pathname;
+  const scope = GOOGLE_SCOPES[service];
+  const state = JSON.stringify({ service, ts: Date.now() });
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: 'token',
+    scope: scope,
+    state: state,
+    include_granted_scopes: 'true',
+    prompt: 'consent'
+  });
+
+  const authUrl = `${GOOGLE_AUTH_URL}?${params.toString()}`;
+  const authWindow = window.open(authUrl, 'Google OAuth', 'width=500,height=600,left=200,top=100');
+
+  const pollTimer = setInterval(() => {
+    try {
+      if (authWindow.closed) { clearInterval(pollTimer); return; }
+      const url = authWindow.location.href;
+      if (url.includes('access_token')) {
+        clearInterval(pollTimer);
+        authWindow.close();
+        const hash = new URL(url).hash.substring(1);
+        const tokenParams = new URLSearchParams(hash);
+        const accessToken = tokenParams.get('access_token');
+        handleOAuthToken(service, accessToken);
+      }
+    } catch (e) { /* cross-origin, still waiting */ }
+  }, 500);
+}
+
+async function handleOAuthToken(service, token) {
+  if (service === 'gsc') {
+    liveState.gscToken = token;
+    try {
+      const res = await fetch('https://www.googleapis.com/webmasters/v3/sites', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.siteEntry && data.siteEntry.length > 0) {
+        showPropertySelector('gsc', data.siteEntry.map(s => ({ url: s.siteUrl, type: s.siteUrl.startsWith('sc-domain:') ? 'Domain' : 'URL Prefix' })));
+      }
+    } catch(e) { console.error('GSC error:', e); }
+  } else {
+    liveState.ga4Token = token;
+    try {
+      const res = await fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.accountSummaries) {
+        const props = [];
+        data.accountSummaries.forEach(acc => (acc.propertySummaries || []).forEach(p => props.push({ url: p.displayName || p.property, type: p.property })));
+        if (props.length > 0) showPropertySelector('ga4', props);
+      }
+    } catch(e) { console.error('GA4 error:', e); }
+  }
+
+  // Get user email
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${token}` } });
+    const info = await res.json();
+    liveState.userEmail = info.email;
+  } catch(e) {}
+
+  markLiveConnected(service);
+}
+
+function markLiveConnected(service) {
+  const btn = document.getElementById('live' + (service === 'gsc' ? 'Gsc' : 'Ga4') + 'Btn');
+  const status = document.getElementById('live' + (service === 'gsc' ? 'Gsc' : 'Ga4') + 'Status');
+  const emailEl = document.getElementById('live' + (service === 'gsc' ? 'Gsc' : 'Ga4') + 'Email');
+  btn.classList.add('connected');
+  status.innerHTML = '<span class="sdot"></span><span>Connected</span>';
+  if (liveState.userEmail) { emailEl.textContent = liveState.userEmail; emailEl.style.display = 'block'; }
+  if (service === 'gsc') liveState.gscConnected = true;
+  else liveState.ga4Connected = true;
+  if (liveState.gscConnected && liveState.ga4Connected) document.getElementById('liveProceedBtn').classList.add('active');
+}
+
+// Property selector
+let pendingPropService = '';
+let selectedPropValue = '';
+
+function showPropertySelector(service, properties) {
+  pendingPropService = service;
+  document.getElementById('propModalTitle').textContent = service === 'gsc' ? 'Select Search Console Property' : 'Select GA4 Property';
+  document.getElementById('propModalDesc').textContent = `Found ${properties.length} properties. Choose one:`;
+  document.getElementById('propModalList').innerHTML = properties.map(p => `
+    <div class="prop-option" onclick="selectProp(this, '${p.url.replace(/'/g, "\\'")}')">
+      <div><div class="purl">${p.url}</div><div class="ptype">${p.type}</div></div>
+    </div>
+  `).join('');
+  document.getElementById('propModal').classList.add('show');
+}
+
+function selectProp(el, value) {
+  document.querySelectorAll('.prop-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPropValue = value;
+}
+
+function confirmProperty() {
+  if (!selectedPropValue) return;
+  if (pendingPropService === 'gsc') {
+    liveState.gscProperty = selectedPropValue;
+    document.getElementById('gscPropertyInput').value = selectedPropValue;
+  } else {
+    liveState.ga4Property = selectedPropValue;
+    document.getElementById('ga4PropertyInput').value = selectedPropValue;
+  }
+  document.getElementById('propModal').classList.remove('show');
+  selectedPropValue = '';
+}
+
+async function launchLive() {
+  if (!liveState.gscConnected || !liveState.ga4Connected) return;
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('dashboardWrapper').style.display = 'block';
+
+  // Fetch real data if tokens exist
+  if (liveState.gscToken && liveState.gscProperty) {
+    try {
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - 28*24*60*60*1000).toISOString().split('T')[0];
+      const res = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(liveState.gscProperty)}/searchAnalytics/query`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${liveState.gscToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate, endDate, dimensions: ['page'], rowLimit: 5000, type: 'web' })
+      });
+      const data = await res.json();
+      if (data.rows) console.log('GSC data loaded:', data.rows.length, 'rows');
+    } catch(e) { console.error('GSC data fetch error:', e); }
+  }
+  if (liveState.ga4Token && liveState.ga4Property) {
+    try {
+      const property = liveState.ga4Property.includes('properties/') ? liveState.ga4Property : `properties/${liveState.ga4Property}`;
+      const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/${property}:runReport`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${liveState.ga4Token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: '28daysAgo', endDate: 'today' }],
+          dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+          metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'bounceRate' }]
+        })
+      });
+      const data = await res.json();
+      if (data.rows) console.log('GA4 data loaded:', data.rows.length, 'rows');
+    } catch(e) { console.error('GA4 data fetch error:', e); }
+  }
+
+  generateHeatmap();
+}
+
+// ============ CONTROLS (unchanged) ============
+function setPreset(el, range) {
+  document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+
+  const labels = {
+    '7d': 'Feb 20 – Feb 27, 2026',
+    '14d': 'Feb 13 – Feb 27, 2026',
+    '28d': 'Jan 28 – Feb 27, 2026',
+    '3m': 'Nov 27, 2025 – Feb 27, 2026',
+    '6m': 'Aug 27, 2025 – Feb 27, 2026',
+    '12m': 'Feb 27, 2025 – Feb 27, 2026',
+    '16m': 'Oct 27, 2024 – Feb 27, 2026',
+  };
+  document.getElementById('dateRangeLabel').textContent = labels[range] || labels['28d'];
+}
+
+function toggleCompare() {
+  const toggle = document.getElementById('compareToggle');
+  toggle.classList.toggle('active');
+  document.body.classList.toggle('compare-mode');
+}
+
+function openCustomize() {
+  document.getElementById('customizeOverlay').classList.add('open');
+  document.getElementById('customizePanel').classList.add('open');
+}
+
+function closeCustomize() {
+  document.getElementById('customizeOverlay').classList.remove('open');
+  document.getElementById('customizePanel').classList.remove('open');
+}
+
+function toggleMetric(item) {
+  const toggle = item.querySelector('.mini-toggle');
+  toggle.classList.toggle('on');
+}
+
+// ============ HEATMAP GENERATION (unchanged) ============
+function generateHeatmap() {
+  const grid = document.getElementById('heatmapGrid');
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const hours = ['6AM', '8AM', '10AM', '12PM', '2PM', '4PM', '6PM'];
+
+  grid.innerHTML = '<div></div>';
+  days.forEach(d => {
+    grid.innerHTML += `<div class="heatmap-header">${d}</div>`;
+  });
+
+  hours.forEach(h => {
+    grid.innerHTML += `<div class="heatmap-label">${h}</div>`;
+    days.forEach(() => {
+      const val = Math.floor(Math.random() * 100);
+      let bg;
+      if (val > 75) bg = 'rgba(59,130,246,0.6)';
+      else if (val > 50) bg = 'rgba(59,130,246,0.35)';
+      else if (val > 25) bg = 'rgba(59,130,246,0.18)';
+      else bg = 'rgba(59,130,246,0.06)';
+      grid.innerHTML += `<div class="heatmap-cell" style="background:${bg}">${val > 50 ? val : ''}</div>`;
+    });
+  });
+}
+
+// Chart action buttons (unchanged)
+document.querySelectorAll('.chart-actions').forEach(group => {
+  group.querySelectorAll('.chart-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.chart-action-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+});
+
+// Tab buttons (unchanged)
+document.querySelectorAll('.tab-row').forEach(group => {
+  group.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+});
+</script>
+</body>
+</html>
